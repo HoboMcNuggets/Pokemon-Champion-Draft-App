@@ -5,6 +5,9 @@
   --stream-cyan: #00f2ff;
   --stream-bg: #0a0c12;
   --stream-panel: rgba(12, 16, 28, 0.92);
+  --stream-grid-line: rgba(18, 24, 40, 0.45);
+  --stream-grid-size: 30px;
+  --stream-pattern-repeat: repeat;
   overflow: hidden;
 }
 
@@ -31,7 +34,7 @@
   display: none;
   height: 100vh;
   min-height: 100vh;
-  background: var(--stream-bg) url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='%230a0c12'/%3E%3Cpath d='M0 30h60M30 0v60' stroke='%23121828' stroke-width='1'/%3E%3C/svg%3E");
+  background: transparent;
   color: #fff;
   font-family: "Segoe UI", system-ui, sans-serif;
 }
@@ -139,6 +142,7 @@
 }
 
 .stream-layout__main {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(240px, 26vw) minmax(220px, 1fr) minmax(240px, 26vw);
   gap: 0.4rem;
@@ -147,6 +151,30 @@
   min-height: 0;
   overflow: visible;
   align-items: stretch;
+}
+
+/* Fond mosaïque pleine largeur (sous joueurs + centre) */
+.stream-mode .stream-layout__main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--stream-bg);
+  background-image: var(--stream-bg-pattern),
+    linear-gradient(var(--stream-grid-line, rgba(18, 24, 40, 0.45)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--stream-grid-line, rgba(18, 24, 40, 0.45)) 1px, transparent 1px);
+  background-size: var(--stream-pattern-size, auto),
+    var(--stream-grid-size, 30px) var(--stream-grid-size, 30px),
+    var(--stream-grid-size, 30px) var(--stream-grid-size, 30px);
+  background-repeat: var(--stream-pattern-repeat, repeat), repeat, repeat;
+  background-position: 0 0;
+}
+
+.stream-layout__main > .stream-side,
+.stream-layout__main > .stream-center {
+  position: relative;
+  z-index: 1;
 }
 
 .stream-side {
@@ -174,7 +202,8 @@
   gap: 0.35rem;
   border: 2px solid var(--stream-gold);
   border-radius: 6px;
-  background: var(--stream-panel);
+  background: color-mix(in srgb, var(--stream-panel) 72%, transparent);
+  backdrop-filter: blur(3px);
   padding: 0.4rem;
   flex: 1 1 0;
   min-height: 0;
@@ -869,3 +898,4 @@
 .stream-mode .tab-nav {
   display: none !important;
 }
+

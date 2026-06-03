@@ -85,7 +85,7 @@
 }
 
 .pokedex-table th {
-  background: #2a4a7a;
+  background: color-mix(in srgb, var(--accent) 82%, #0a0c12);
   color: #fff;
   padding: 0.65rem 0.5rem;
   text-align: left;
@@ -140,12 +140,12 @@
 }
 
 .pokedex-table tbody tr:hover {
-  background: rgba(42, 74, 122, 0.15);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .pokedex-table tr.pokedex-row--selected {
-  background: rgba(42, 74, 122, 0.35) !important;
-  outline: 2px solid #2a4a7a;
+  background: color-mix(in srgb, var(--accent) 30%, var(--bg-card)) !important;
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
@@ -256,7 +256,8 @@
   font-size: 0.9rem;
 }
 
-.pokedex-table img {
+/* Colonne sprite uniquement — ne pas cibler les icônes de type dans les badges */
+.pokedex-table tbody td:nth-child(2) img {
   width: 48px;
   height: 48px;
   object-fit: contain;
@@ -268,7 +269,7 @@
 }
 
 .pokedex-table th.sortable:hover {
-  background: #3a5a8a;
+  background: color-mix(in srgb, var(--accent) 92%, #fff);
 }
 
 .pokedex-empty {
@@ -278,7 +279,7 @@
 }
 
 .type-badge {
-  display: inline-block;
+  display: inline-flex;
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.15rem 0.45rem;

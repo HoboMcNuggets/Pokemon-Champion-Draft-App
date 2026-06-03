@@ -5,6 +5,42 @@
   const DRAFT_KEY = 'pokemonDraft.v1';
   const POOL_KEY = 'pokemonDraft.pool';
   const VIEW_MODE_KEY = 'pokemonDraft.viewMode';
+  const THEME_KEY = 'pokemonDraft.theme';
+  const VALID_THEMES = [
+    'default',
+    'normal',
+    'fire',
+    'water',
+    'electric',
+    'grass',
+    'ice',
+    'fighting',
+    'poison',
+    'ground',
+    'flying',
+    'psychic',
+    'bug',
+    'rock',
+    'ghost',
+    'dragon',
+    'dark',
+    'steel',
+    'fairy',
+    'stellar',
+  ];
+  const THEME_ALIASES = {
+    'all-types': 'default',
+    pikachu: 'electric',
+    squirtle: 'water',
+    charizard: 'fire',
+    bulbasaur: 'grass',
+  };
+
+  function normalizeTheme(theme) {
+    if (VALID_THEMES.includes(theme)) return theme;
+    if (THEME_ALIASES[theme]) return THEME_ALIASES[theme];
+    return 'default';
+  }
 
   function saveDraft(state) {
     try {
@@ -70,6 +106,24 @@
     }
   }
 
+  function saveTheme(theme) {
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function loadTheme() {
+    try {
+      const v = localStorage.getItem(THEME_KEY);
+      return normalizeTheme(v);
+    } catch (e) {
+      return 'default';
+    }
+  }
+
   global.DraftStorage = {
     saveDraft,
     loadDraft,
@@ -78,5 +132,8 @@
     clearPool,
     saveViewMode,
     loadViewMode,
+    saveTheme,
+    loadTheme,
+    VALID_THEMES,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

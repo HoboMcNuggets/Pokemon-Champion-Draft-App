@@ -5,14 +5,12 @@
   const PLACEHOLDER = 'assets/sprites/placeholder.svg';
 
   function typeClass(type) {
-    if (!type) return '';
-    return 'type-' + String(type).toLowerCase().replace(/\s+/g, '-').replace(/é/g, 'e');
+    return global.TypeDisplay?.typeClass(type) ?? '';
   }
 
   function renderTypeBadge(type) {
-    if (!type) return '';
-    const cls = typeClass(type);
-    return `<span class="type-badge ${cls}">${escapeHtml(type)}</span>`;
+    if (!type || !global.TypeDisplay) return '';
+    return global.TypeDisplay.renderBadge(type, { variant: 'badge' });
   }
 
   function renderAbilitiesCell(pokemon) {

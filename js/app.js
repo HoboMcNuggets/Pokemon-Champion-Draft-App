@@ -30,6 +30,7 @@
   let slotPickerContext = null;
   /** Référence persistante — le panneau J8 est re-rendu à chaque tick stream. */
   let viewModeSwitchEl = null;
+  let themeSwitchEl = null;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
@@ -96,6 +97,7 @@
     if (tabId === 'pokedex') {
       renderPokedex();
     }
+    updateThemeSwitchVisibility();
   }
 
   function loadInitial() {
@@ -418,6 +420,28 @@
     return viewModeSwitchEl;
   }
 
+  function getThemeSwitchEl() {
+    if (!themeSwitchEl) {
+      themeSwitchEl = document.querySelector('.theme-switch');
+    }
+    return themeSwitchEl;
+  }
+
+  function shouldShowThemeSwitch() {
+    return !isStreamMode() && !isPokedexTabActive();
+  }
+
+  function updateThemeSwitchVisibility() {
+    const anchor = document.getElementById('theme-switch-anchor-header');
+    const sw = getThemeSwitchEl();
+    if (!anchor) return;
+    const show = shouldShowThemeSwitch();
+    anchor.hidden = !show;
+    if (show && sw && sw.parentElement !== anchor) {
+      anchor.appendChild(sw);
+    }
+  }
+
   function placeViewModeSwitch() {
     const sw = getViewModeSwitchEl();
     if (!sw) return;
@@ -447,6 +471,7 @@
     }
 
     placeMessageBar();
+    updateThemeSwitchVisibility();
     placeViewModeSwitch();
     if (stream) showMessage('');
 
@@ -466,6 +491,26 @@
     setViewMode(saved);
   }
 
+  function setTheme(theme) {
+    const valid = DraftStorage.VALID_THEMES || ['default'];
+    const id = valid.includes(theme) ? theme : 'default';
+    if (id === 'default') {
+      delete document.documentElement.dataset.theme;
+    } else {
+      document.documentElement.dataset.theme = id;
+    }
+    document.querySelectorAll('.theme-switch .theme-btn').forEach((btn) => {
+      const active = btn.dataset.themeId === id;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    DraftStorage.saveTheme(id);
+  }
+
+  function initTheme() {
+    setTheme(DraftStorage.loadTheme());
+  }
+
   function renderAll() {
     if (editingPlayerName === null) {
       renderPlayersGrid();
@@ -478,6 +523,7 @@
       renderPokedex();
     }
     if (StreamView) StreamView.render(state, poolData);
+    updateThemeSwitchVisibility();
     placeViewModeSwitch();
   }
 
@@ -934,6 +980,10 @@
     $('#btn-mode-config').addEventListener('click', () => setViewMode('config'));
     $('#btn-mode-stream').addEventListener('click', () => setViewMode('stream'));
 
+    document.querySelectorAll('.theme-switch .theme-btn').forEach((btn) => {
+      btn.addEventListener('click', () => setTheme(btn.dataset.themeId));
+    });
+
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey && e.key === 'z') {
         e.preventDefault();
@@ -963,7 +1013,9 @@
     loadInitial();
     initTabs();
     initEvents();
+    initTheme();
     initViewMode();
+    updateThemeSwitchVisibility();
     placeMessageBar();
     renderAll();
 

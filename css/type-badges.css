@@ -1,0 +1,39 @@
+/* Badges type — icône SVG couleur + pastille Pokédex */
+
+.type-badge,
+.stream-type-orb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  vertical-align: middle;
+}
+
+.type-badge__label,
+.stream-type-orb__label {
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.type-badge__icon {
+  width: 11px;
+  height: 11px;
+  max-width: 11px;
+  max-height: 11px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.pokedex-table .type-badge__icon,
+.pokedex-detail__types .type-badge__icon {
+  width: 11px;
+  height: 11px;
+  max-width: 11px;
+  max-height: 11px;
+}
+
+.stream-type-orb__icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  object-fit: contain;
+}

@@ -59,12 +59,9 @@
 
 
 
-  function typeOrbClass(type) {
-
-    if (!type) return '';
-
-    return 'stream-type-orb type-' + String(type).toLowerCase().replace(/\s+/g, '-').replace(/é/g, 'e');
-
+  function renderTypeOrb(type) {
+    if (!type || !global.TypeDisplay) return '';
+    return global.TypeDisplay.renderBadge(type, { variant: 'orb' });
   }
 
 
@@ -214,15 +211,13 @@
       alt: pokemon.name,
     });
 
-    const t2 = pokemon.type2
-      ? `<span class="${typeOrbClass(pokemon.type2)}">${escapeHtml(pokemon.type2)}</span>`
-      : '';
+    const t2 = pokemon.type2 ? renderTypeOrb(pokemon.type2) : '';
     detailsEl.className = 'stream-spotlight-details';
     detailsEl.innerHTML = `
       <h2 class="stream-spotlight__name">${escapeHtml(pokemon.name)}</h2>
       <div class="stream-spotlight__dex">${escapeHtml(pokemon.pokedexId)}</div>
       <div class="stream-spotlight__types">
-        <span class="${typeOrbClass(pokemon.type1)}">${escapeHtml(pokemon.type1)}</span>
+        ${renderTypeOrb(pokemon.type1)}
         ${t2}
       </div>
       <div class="stream-stats">${renderStatsBars(pokemon)}</div>
