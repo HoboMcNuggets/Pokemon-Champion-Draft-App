@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Draft Pokémon — Stream</title>
+
+  <link rel="stylesheet" href="css/styles.css">
+
+  <link rel="stylesheet" href="css/pokedex.css">
+
+  <link rel="stylesheet" href="css/stream-layout.css">
+
+</head>
+
+<body>
+
+  <div class="view-mode-switch" role="group" aria-label="Mode d'affichage">
+
+    <button type="button" class="view-mode-btn active" data-view-mode="config" id="btn-mode-config" title="Mode configuration">Config</button>
+
+    <button type="button" class="view-mode-btn" data-view-mode="stream" id="btn-mode-stream" title="Mode stream">Stream</button>
+
+  </div>
+
+
+
+  <header class="app-header">
+
+    <h1 class="app-title">Draft Pokémon</h1>
+
+    <nav class="tab-nav" role="tablist">
+
+      <button type="button" class="tab-btn active" data-tab="draft" role="tab" aria-selected="true">Draft</button>
+
+      <button type="button" class="tab-btn" data-tab="pokedex" role="tab">Pokédex</button>
+
+    </nav>
+
+  </header>
+
+
+
+  <section id="panel-draft" class="tab-panel active" data-panel="draft">
+
+    <div class="phase-banner">
+
+      <div class="phase-banner__header">
+        <div class="phase-banner__phase" id="phase-label">Configuration</div>
+        <div id="message-bar" class="message-bar message-bar--inline hidden" role="status"></div>
+      </div>
+
+      <div class="phase-banner__active" id="active-player-label">—</div>
+
+      <div class="phase-banner__hint" id="phase-hint"></div>
+
+    </div>
+
+
+
+    <div id="complete-panel" class="complete-panel hidden">
+
+      <h2>Draft terminé</h2>
+
+      <p>Tous les picks ont été enregistrés.</p>
+
+      <button type="button" class="btn btn-primary" id="btn-new-game">Nouvelle partie</button>
+
+    </div>
+
+
+
+    <div id="stream-layout" class="stream-layout" aria-hidden="true">
+
+      <div class="stream-layout__main">
+
+        <div class="stream-side stream-side--left" id="stream-left" aria-label="Joueurs gauche"></div>
+
+        <div class="stream-center">
+          <div class="stream-layout__top">
+            <div class="stream-now"><span id="stream-now">—</span></div>
+            <div class="stream-next">Prochain : <strong id="stream-next-name">—</strong></div>
+          </div>
+          <div class="stream-notify-slot" id="stream-notify-slot"></div>
+          <div class="stream-center__middle">
+            <div id="stream-spotlight-frame" class="stream-spotlight__frame stream-spotlight--empty">
+              <span class="stream-spotlight__placeholder">Sélection en cours…</span>
+            </div>
+            <div class="stream-search-panel">
+              <input type="search" id="pokemon-search" placeholder="Rechercher un Pokémon à afficher…" autocomplete="off">
+              <div class="search-results stream-search-results" id="search-results"></div>
+            </div>
+            <div class="stream-stats-wrap">
+              <div id="stream-spotlight-details" class="stream-spotlight-details stream-spotlight--empty"></div>
+            </div>
+            <div class="stream-actions-row">
+              <div class="stream-actions">
+                <div class="stream-actions__buttons">
+                  <button type="button" class="stream-action-btn stream-action-btn--start hidden" id="btn-start-draft-stream">Démarrer le draft</button>
+                  <button type="button" class="stream-action-btn stream-action-btn--ban hidden" id="btn-ban" disabled>Bannir</button>
+                  <button type="button" class="stream-action-btn stream-action-btn--pick hidden" id="btn-pick" disabled>Choisir</button>
+                  <button type="button" class="stream-action-btn stream-action-btn--undo hidden" id="btn-undo-dock" disabled>Retour</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <footer class="stream-banned">
+            <h2 class="stream-banned__title">Bannis</h2>
+            <div class="stream-banned__list" id="stream-banned-list"></div>
+          </footer>
+        </div>
+
+        <div class="stream-side stream-side--right" id="stream-right" aria-label="Joueurs droite"></div>
+
+      </div>
+
+    </div>
+
+
+
+    <div id="draft-main--classic">
+
+      <div class="players-grid" id="players-grid"></div>
+
+
+
+      <div class="draft-workspace" id="draft-workspace">
+
+        <div id="operator-dock" class="operator-dock operator-dock--classic">
+          <p class="operator-dock__hint">Passez en mode Stream pour bannir et draft.</p>
+        </div>
+
+        <aside class="sidebar-panel operator-only">
+
+          <h3>État du pool</h3>
+
+          <p class="stats-line">Dispo draft : <strong id="stat-available">—</strong></p>
+
+          <p class="stats-line">Bans : <strong id="stat-bans">0</strong> / <span id="stat-bans-max">16</span></p>
+          <p class="stats-line">Picks : <strong id="stat-picks">0</strong> / <span id="stat-picks-max">64</span></p>
+
+        </aside>
+
+      </div>
+
+
+
+      <div class="toolbar operator-only">
+
+        <button type="button" class="btn btn-secondary" id="btn-undo">Retour</button>
+
+        <button type="button" class="btn btn-secondary" id="btn-export">Exporter le draft</button>
+
+        <button type="button" class="btn btn-secondary" id="btn-import">Importer le draft</button>
+
+        <input type="file" id="draft-import-file" class="hidden" accept=".json,application/json">
+
+        <button type="button" class="btn btn-danger" id="btn-reset-draft">Réinitialiser le draft</button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <section id="panel-pokedex" class="tab-panel" data-panel="pokedex">
+    <div id="pokedex-root">
+      <div class="pokedex-header"></div>
+      <div class="pokedex-content"></div>
+    </div>
+  </section>
+
+
+
+  <div id="modal-overlay" class="modal-overlay hidden">
+
+    <div class="modal">
+
+      <h3 id="modal-title">Confirmer</h3>
+
+      <p id="modal-body"></p>
+
+      <div class="modal-actions">
+
+        <button type="button" class="btn btn-secondary" id="modal-cancel">Annuler</button>
+
+        <button type="button" class="btn btn-danger" id="modal-confirm">Confirmer</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div id="slot-picker-overlay" class="modal-overlay hidden">
+
+    <div class="modal modal--picker">
+
+      <h3 id="slot-picker-title">Choisir un Pokémon</h3>
+
+      <input type="search" id="slot-picker-search" class="slot-picker-search" placeholder="Rechercher un Pokémon…" autocomplete="off">
+
+      <button type="button" class="btn btn-danger slot-picker-clear hidden" id="slot-picker-clear">Retirer le Pokémon</button>
+
+      <div class="slot-picker-results" id="slot-picker-results"></div>
+
+      <div class="modal-actions">
+
+        <button type="button" class="btn btn-secondary" id="slot-picker-cancel">Annuler</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <script src="js/default-pool.js"></script>
+  <script src="js/pokemon-pokedex-data.js"></script>
+
+  <script src="js/species.js"></script>
+
+  <script src="js/pool-import.js"></script>
+
+  <script src="js/state.js"></script>
+
+  <script src="js/storage.js"></script>
+
+  <script src="js/pokedex-view.js"></script>
+
+  <script src="js/stream-view.js"></script>
+
+  <script src="js/app.js"></script>
+
+</body>
+
+</html>
+

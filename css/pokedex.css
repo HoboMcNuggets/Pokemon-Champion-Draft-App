@@ -1,0 +1,139 @@
+.pokedex-header {
+  margin-bottom: 1rem;
+}
+
+.pokedex-header h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+}
+
+.pokedex-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.pokedex-header__top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 1rem;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.pokedex-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pokedex-header__actions input[type="search"],
+.pokedex-header__actions select {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.pokedex-header__actions input[type="search"] {
+  min-width: 220px;
+}
+
+.pokedex-header__actions select {
+  min-width: 140px;
+}
+
+/* Type colors EN + FR */
+.type-grass, .type-plante { background: #5cbd2e; color: #fff; }
+.type-poison { background: #a33ea1; color: #fff; }
+.type-fire, .type-feu { background: #ee8130; color: #fff; }
+.type-flying, .type-vol { background: #a8c8e8; color: #1a1a2e; }
+.type-dragon { background: #5060e1; color: #fff; }
+.type-water, .type-eau { background: #4592c4; color: #fff; }
+.type-bug, .type-insecte { background: #91a119; color: #fff; }
+.type-normal { background: #a8a878; color: #fff; }
+.type-electric, .type-électrik, .type-electrik { background: #f8d030; color: #1a1a2e; }
+.type-ground, .type-sol { background: #e2bf65; color: #1a1a2e; }
+.type-rock, .type-roche { background: #b6a136; color: #fff; }
+.type-ice, .type-glace { background: #98d8d8; color: #1a1a2e; }
+.type-fighting, .type-combat { background: #c03028; color: #fff; }
+.type-psychic, .type-psy { background: #f85888; color: #fff; }
+.type-ghost, .type-spectre { background: #705898; color: #fff; }
+.type-dark, .type-ténèbres, .type-tenebres { background: #504538; color: #fff; }
+.type-steel, .type-acier { background: #b8b8d0; color: #1a1a2e; }
+.type-fairy, .type-fée, .type-fee { background: #ee99ac; color: #1a1a2e; }
+.type-stellar { background: #6ec8ff; color: #1a1a2e; }
+
+.pokedex-table-wrap {
+  overflow-x: auto;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.pokedex-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.pokedex-table th {
+  background: #2a4a7a;
+  color: #fff;
+  padding: 0.65rem 0.5rem;
+  text-align: left;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+
+.pokedex-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.pokedex-table tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.pokedex-table tr.row-inactif {
+  opacity: 0.5;
+}
+
+.pokedex-table img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.pokedex-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.pokedex-table th.sortable:hover {
+  background: #3a5a8a;
+}
+
+.pokedex-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-muted);
+}
+
+.type-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}

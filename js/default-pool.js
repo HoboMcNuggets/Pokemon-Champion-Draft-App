@@ -1,0 +1,22 @@
+/**
+ * Pool exemple embarqué (fonctionne en file:// sans serveur HTTP).
+ */
+window.DEFAULT_EXAMPLE_POOL = {
+  version: 1,
+  leagueName: 'Ligue exemple',
+  poolLabel: 'Pool pilote',
+  pokemon: [
+    { pokedexId: '#0003', id: '0003', name: 'Venusaur', type1: 'Grass', type2: 'Poison', baseTotal: 525, hp: 80, attack: 82, defense: 83, spAtk: 100, spDef: 100, speed: 80, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/venusaur.gif', enabled: true, speciesKey: '#0003', isMega: false },
+    { pokedexId: '#0003-M', id: '0003-m', name: 'Mega Venusaur', type1: 'Grass', type2: 'Poison', baseTotal: 625, hp: 80, attack: 100, defense: 123, spAtk: 122, spDef: 120, speed: 80, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/venusaur-mega.gif', enabled: true, speciesKey: '#0003', isMega: true },
+    { pokedexId: '#0006', id: '0006', name: 'Charizard', type1: 'Fire', type2: 'Flying', baseTotal: 534, hp: 78, attack: 84, defense: 78, spAtk: 109, spDef: 85, speed: 100, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/charizard.gif', enabled: true, speciesKey: '#0006', isMega: false },
+    { pokedexId: '#0006-M', id: '0006-m-y', name: 'Mega Charizard Y', type1: 'Fire', type2: 'Flying', baseTotal: 634, hp: 78, attack: 104, defense: 78, spAtk: 159, spDef: 115, speed: 100, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/charizard-megay.gif', enabled: true, speciesKey: '#0006', isMega: true },
+    { pokedexId: '#0006-M', id: '0006-m-x', name: 'Mega Charizard X', type1: 'Fire', type2: 'Dragon', baseTotal: 634, hp: 78, attack: 130, defense: 111, spAtk: 130, spDef: 85, speed: 100, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/charizard-megax.gif', enabled: true, speciesKey: '#0006', isMega: true },
+    { pokedexId: '#0009', id: '0009', name: 'Blastoise', type1: 'Water', type2: '', baseTotal: 530, hp: 79, attack: 83, defense: 100, spAtk: 85, spDef: 105, speed: 78, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/blastoise.gif', enabled: true, speciesKey: '#0009', isMega: false },
+    { pokedexId: '#0009-M', id: '0009-m', name: 'Mega Blastoise', type1: 'Water', type2: '', baseTotal: 630, hp: 79, attack: 103, defense: 120, spAtk: 135, spDef: 115, speed: 78, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/blastoise-mega.gif', enabled: true, speciesKey: '#0009', isMega: true },
+    { pokedexId: '#0015', id: '0015', name: 'Beedrill', type1: 'Bug', type2: 'Poison', baseTotal: 395, hp: 65, attack: 90, defense: 40, spAtk: 45, spDef: 80, speed: 75, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/beedrill.gif', enabled: true, speciesKey: '#0015', isMega: false },
+    { pokedexId: '#0015-M', id: '0015-m', name: 'Mega Beedrill', type1: 'Bug', type2: 'Poison', baseTotal: 495, hp: 65, attack: 150, defense: 40, spAtk: 15, spDef: 80, speed: 145, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/beedrill-mega.gif', enabled: true, speciesKey: '#0015', isMega: true },
+    { pokedexId: '#0018', id: '0018', name: 'Pidgeot', type1: 'Normal', type2: 'Flying', baseTotal: 479, hp: 83, attack: 80, defense: 75, spAtk: 70, spDef: 70, speed: 101, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/pidgeot.gif', enabled: true, speciesKey: '#0018', isMega: false },
+    { pokedexId: '#0018-M', id: '0018-m', name: 'Mega Pidgeot', type1: 'Normal', type2: 'Flying', baseTotal: 579, hp: 83, attack: 80, defense: 80, spAtk: 135, spDef: 80, speed: 121, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/pidgeot-mega.gif', enabled: true, speciesKey: '#0018', isMega: true },
+    { pokedexId: '#0024', id: '0024', name: 'Arbok', type1: 'Poison', type2: '', baseTotal: 448, hp: 60, attack: 95, defense: 69, spAtk: 65, spDef: 79, speed: 80, spriteUrl: 'https://play.pokemonshowdown.com/sprites/ani/arbok.gif', enabled: false, speciesKey: '#0024', isMega: false },
+  ],
+};
