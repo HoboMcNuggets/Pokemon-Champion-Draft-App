@@ -11,6 +11,9 @@
   --danger: #ef5b5b;
   --warning: #e8b84a;
   --font: "Segoe UI", system-ui, sans-serif;
+  --view-mode-switch-inset: 0.25rem;
+  /* Aligné sur le coin caméra J8 en stream : padding grille + panneau + inset bouton */
+  --view-mode-switch-viewport-offset: calc(0.4rem + 0.4rem + var(--view-mode-switch-inset));
 }
 
 *,
@@ -511,11 +514,18 @@ input[type="file"] {
   margin-top: 1rem;
 }
 
-/* Bascule Config / Stream — fixe en bas à droite (Config) ; ancrée caméra J8 en Stream */
-.view-mode-switch {
+/* Bascule Config / Stream — ancrée coin inférieur droit (Config) ou caméra J8 (Stream) */
+.view-mode-switch-anchor-fixed {
   position: fixed;
-  bottom: 0.5rem;
-  right: 0.5rem;
+  bottom: var(--view-mode-switch-viewport-offset);
+  right: var(--view-mode-switch-viewport-offset);
+  z-index: 300;
+}
+
+.view-mode-switch {
+  position: absolute;
+  bottom: 0;
+  right: 0;
   top: auto;
   z-index: 300;
   display: inline-flex;
@@ -552,8 +562,8 @@ input[type="file"] {
 .stream-mode .view-mode-switch {
   display: inline-flex !important;
   position: absolute;
-  bottom: 0.25rem;
-  right: 0.25rem;
+  bottom: var(--view-mode-switch-inset);
+  right: var(--view-mode-switch-inset);
   top: auto;
   z-index: 400;
   border-color: rgba(255, 215, 0, 0.6);

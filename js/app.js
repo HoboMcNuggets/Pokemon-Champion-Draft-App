@@ -428,8 +428,9 @@
       }
       return;
     }
-    if (sw.parentElement !== document.body) {
-      document.body.appendChild(sw);
+    const fixedAnchor = document.getElementById('view-mode-switch-anchor-fixed');
+    if (fixedAnchor && sw.parentElement !== fixedAnchor) {
+      fixedAnchor.appendChild(sw);
     }
   }
 
