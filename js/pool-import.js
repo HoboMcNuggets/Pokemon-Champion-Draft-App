@@ -18,6 +18,7 @@
     'enabled',
     'speciesKey',
     'isMega',
+    'abilities',
   ];
 
   const NUMERIC_FIELDS = [
@@ -68,6 +69,22 @@
 
       if (typeof entry.isMega !== 'boolean') {
         errors.push(`${label} : "isMega" doit être true ou false.`);
+      }
+
+      if (!Array.isArray(entry.abilities)) {
+        errors.push(`${label} : "abilities" doit être un tableau.`);
+      } else if (entry.abilities.length < 1 || entry.abilities.length > 3) {
+        errors.push(`${label} : "abilities" doit contenir entre 1 et 3 éléments.`);
+      } else {
+        entry.abilities.forEach((ability, ai) => {
+          const abLabel = `${label}, ability #${ai + 1}`;
+          if (!ability || typeof ability.name !== 'string' || !ability.name.trim()) {
+            errors.push(`${abLabel} : "name" doit être une chaîne non vide.`);
+          }
+          if (typeof ability.isHidden !== 'boolean') {
+            errors.push(`${abLabel} : "isHidden" doit être true ou false.`);
+          }
+        });
       }
 
       if (entry.pokedexId && String(entry.pokedexId).endsWith('-M') && !entry.isMega) {

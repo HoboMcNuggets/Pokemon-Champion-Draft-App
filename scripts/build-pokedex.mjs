@@ -144,6 +144,28 @@ function mapTypes(pokemon) {
   return { type1, type2 };
 }
 
+async function mapAbilities(pokemon, abilityCache) {
+  const sorted = [...(pokemon.abilities || [])].sort((a, b) => a.slot - b.slot);
+  const out = [];
+  for (const entry of sorted) {
+    const url = entry.ability?.url;
+    const slug = entry.ability?.name || '';
+    let name = titleCaseWords(slug.replace(/-/g, ' '));
+    if (url) {
+      let detail = abilityCache.get(url);
+      if (!detail) {
+        detail = await fetchJson(url);
+        abilityCache.set(url, detail);
+        await sleep(REQUEST_DELAY_MS);
+      }
+      const en = detail?.names?.find((n) => n.language?.name === 'en');
+      if (en?.name) name = en.name;
+    }
+    out.push({ name, isHidden: !!entry.is_hidden });
+  }
+  return out;
+}
+
 function pokeApiSpriteUrl(pokemon) {
   return (
     pokemon.sprites?.other?.['official-artwork']?.front_default ||
@@ -191,6 +213,7 @@ async function main() {
   console.log(`Sprites indexés : ${spriteIndex.size}`);
 
   const speciesCache = new Map();
+  const abilityCache = new Map();
   const counters = {};
   const existingIds = new Set();
   const pokemon = [];
@@ -228,6 +251,7 @@ async function main() {
     }
     const { type1, type2 } = mapTypes(detail);
     const stats = mapStats(detail);
+    const abilities = await mapAbilities(detail, abilityCache);
     const baseTotal = Object.values(stats).reduce((a, b) => a + b, 0);
 
     let sprite = resolveShowdownSprite(name, isMega, spriteIndex, detail.name);
@@ -252,6 +276,7 @@ async function main() {
       enabled: false,
       speciesKey: speciesKeyFromPokedexId(pokedexId),
       isMega,
+      abilities,
     };
 
     existingIds.add(id);
@@ -281,10 +306,86 @@ async function main() {
       if (existingIds.has(mergeId)) {
         continue;
       }
-      pokemon.push({ ...old, id: mergeId, enabled: true });
+      const entry = { ...old, id: mergeId, enabled: true };
+      if (!Array.isArray(entry.abilities) || entry.abilities.length === 0) {
+        const donor =
+          pokemon.find(
+            (p) =>
+              p.pokedexId === old.pokedexId &&
+              p.isMega === old.isMega &&
+              Array.isArray(p.abilities) &&
+              p.abilities.length > 0
+          ) ||
+          pokemon.find(
+            (p) =>
+              p.speciesKey === old.speciesKey &&
+              p.isMega === old.isMega &&
+              Array.isArray(p.abilities) &&
+              p.abilities.length > 0
+          );
+        if (donor) entry.abilities = donor.abilities.map((a) => ({ ...a }));
+      }
+      pokemon.push(entry);
       existingIds.add(mergeId);
       merged++;
     }
+  }
+
+  function findAbilityDonor(entry) {
+    const basePokedexId = String(entry.pokedexId || '').replace(/-M$/i, '');
+    return (
+      pokemon.find(
+        (p) =>
+          p !== entry &&
+          p.pokedexId === entry.pokedexId &&
+          Array.isArray(p.abilities) &&
+          p.abilities.length > 0
+      ) ||
+      pokemon.find(
+        (p) =>
+          p !== entry &&
+          p.speciesKey === entry.speciesKey &&
+          p.isMega === entry.isMega &&
+          Array.isArray(p.abilities) &&
+          p.abilities.length > 0
+      ) ||
+      pokemon.find(
+        (p) =>
+          p !== entry &&
+          p.speciesKey === entry.speciesKey &&
+          Array.isArray(p.abilities) &&
+          p.abilities.length > 0
+      ) ||
+      pokemon.find(
+        (p) =>
+          p !== entry &&
+          basePokedexId &&
+          p.pokedexId === basePokedexId &&
+          Array.isArray(p.abilities) &&
+          p.abilities.length > 0
+      ) ||
+      pokemon.find(
+        (p) =>
+          p !== entry &&
+          normalizeKey(p.name) === normalizeKey(entry.name) &&
+          Array.isArray(p.abilities) &&
+          p.abilities.length > 0
+      )
+    );
+  }
+
+  let abilitiesFilled = 0;
+  for (const entry of pokemon) {
+    if (!Array.isArray(entry.abilities) || entry.abilities.length === 0) {
+      const donor = findAbilityDonor(entry);
+      if (donor) {
+        entry.abilities = donor.abilities.map((a) => ({ ...a }));
+        abilitiesFilled++;
+      }
+    }
+  }
+  if (abilitiesFilled) {
+    console.log(`Habilités complétées par correspondance : ${abilitiesFilled}`);
   }
 
   const enabledCount = pokemon.filter((p) => p.enabled).length;

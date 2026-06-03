@@ -242,6 +242,23 @@
   letter-spacing: 0.05em;
 }
 
+.stream-player__cam.view-mode-switch-anchor {
+  position: relative;
+  justify-content: flex-start;
+  align-items: flex-start;
+  overflow: visible;
+}
+
+.stream-player__cam-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  user-select: none;
+}
+
 .stream-player__slots {
   --stream-slot-size: 40px;
   display: grid;
@@ -570,6 +587,46 @@
   box-shadow: 0 0 16px rgba(0, 242, 255, 0.12);
 }
 
+.stream-abilities {
+  width: 100%;
+  max-width: 400px;
+  margin-top: 0.75rem;
+  border: 2px solid rgba(0, 242, 255, 0.55);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  background: var(--stream-panel);
+  box-shadow: 0 0 16px rgba(0, 242, 255, 0.12);
+}
+
+.stream-abilities__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #c8d4ec;
+}
+
+.stream-ability-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.stream-ability-list__item {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--stream-cyan);
+}
+
+.stream-ability-list__item--hidden {
+  color: #a8b4cc;
+  font-style: italic;
+}
+
 .stream-stat-row {
   display: grid;
   grid-template-columns: 76px 42px 1fr;
@@ -621,7 +678,7 @@
 .stream-stat-row--spa .stream-stat-bar { background: rgba(72, 176, 240, 0.28); }
 .stream-stat-row--spd .stream-stat-bar { background: rgba(72, 96, 224, 0.28); }
 .stream-stat-row--spe .stream-stat-bar { background: rgba(240, 72, 168, 0.28); }
-.stream-stat-row--total .stream-stat-bar { background: rgba(88, 168, 56, 0.35); }
+.stream-stat-row--total .stream-stat-bar { background: rgba(180, 188, 204, 0.28); }
 
 .stream-stat-bar__fill {
   height: 100%;
@@ -636,7 +693,7 @@
 .stream-stat-bar__fill--spa { background: #48b0f0; }
 .stream-stat-bar__fill--spd { background: #4060e0; }
 .stream-stat-bar__fill--spe { background: #f048a8; }
-.stream-stat-bar__fill--total { background: #58a838; }
+.stream-stat-bar__fill--total { background: #c8ced8; }
 
 .stream-spotlight__frame.stream-spotlight--empty {
   border-color: rgba(255, 215, 0, 0.3);

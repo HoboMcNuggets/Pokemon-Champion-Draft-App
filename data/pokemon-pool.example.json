@@ -19,7 +19,11 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/venusaur.gif",
       "enabled": true,
       "speciesKey": "#0003",
-      "isMega": false
+      "isMega": false,
+      "abilities": [
+        { "name": "Overgrow", "isHidden": false },
+        { "name": "Chlorophyll", "isHidden": true }
+      ]
     },
     {
       "pokedexId": "#0003-M",
@@ -37,7 +41,10 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/venusaur-mega.gif",
       "enabled": true,
       "speciesKey": "#0003",
-      "isMega": true
+      "isMega": true,
+      "abilities": [
+        { "name": "Thick Fat", "isHidden": false }
+      ]
     },
     {
       "pokedexId": "#0006",
@@ -55,7 +62,11 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/charizard.gif",
       "enabled": true,
       "speciesKey": "#0006",
-      "isMega": false
+      "isMega": false,
+      "abilities": [
+        { "name": "Blaze", "isHidden": false },
+        { "name": "Solar Power", "isHidden": true }
+      ]
     },
     {
       "pokedexId": "#0006-M",
@@ -73,7 +84,10 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/charizard-megay.gif",
       "enabled": true,
       "speciesKey": "#0006",
-      "isMega": true
+      "isMega": true,
+      "abilities": [
+        { "name": "Drought", "isHidden": false }
+      ]
     },
     {
       "pokedexId": "#0006-M",
@@ -91,7 +105,10 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/charizard-megax.gif",
       "enabled": true,
       "speciesKey": "#0006",
-      "isMega": true
+      "isMega": true,
+      "abilities": [
+        { "name": "Tough Claws", "isHidden": false }
+      ]
     },
     {
       "pokedexId": "#0009",
@@ -109,7 +126,11 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/blastoise.gif",
       "enabled": true,
       "speciesKey": "#0009",
-      "isMega": false
+      "isMega": false,
+      "abilities": [
+        { "name": "Torrent", "isHidden": false },
+        { "name": "Rain Dish", "isHidden": true }
+      ]
     },
     {
       "pokedexId": "#0009-M",
@@ -127,7 +148,10 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/blastoise-mega.gif",
       "enabled": true,
       "speciesKey": "#0009",
-      "isMega": true
+      "isMega": true,
+      "abilities": [
+        { "name": "Mega Launcher", "isHidden": false }
+      ]
     },
     {
       "pokedexId": "#0015",
@@ -145,7 +169,11 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/beedrill.gif",
       "enabled": true,
       "speciesKey": "#0015",
-      "isMega": false
+      "isMega": false,
+      "abilities": [
+        { "name": "Swarm", "isHidden": false },
+        { "name": "Sniper", "isHidden": true }
+      ]
     },
     {
       "pokedexId": "#0015-M",
@@ -163,7 +191,10 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/beedrill-mega.gif",
       "enabled": true,
       "speciesKey": "#0015",
-      "isMega": true
+      "isMega": true,
+      "abilities": [
+        { "name": "Adaptability", "isHidden": false }
+      ]
     },
     {
       "pokedexId": "#0018",
@@ -181,7 +212,12 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/pidgeot.gif",
       "enabled": true,
       "speciesKey": "#0018",
-      "isMega": false
+      "isMega": false,
+      "abilities": [
+        { "name": "Keen Eye", "isHidden": false },
+        { "name": "Tangled Feet", "isHidden": false },
+        { "name": "Big Pecks", "isHidden": true }
+      ]
     },
     {
       "pokedexId": "#0018-M",
@@ -199,7 +235,10 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/pidgeot-mega.gif",
       "enabled": true,
       "speciesKey": "#0018",
-      "isMega": true
+      "isMega": true,
+      "abilities": [
+        { "name": "No Guard", "isHidden": false }
+      ]
     },
     {
       "pokedexId": "#0024",
@@ -217,7 +256,12 @@
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/arbok.gif",
       "enabled": false,
       "speciesKey": "#0024",
-      "isMega": false
+      "isMega": false,
+      "abilities": [
+        { "name": "Intimidate", "isHidden": false },
+        { "name": "Shed Skin", "isHidden": false },
+        { "name": "Unnerve", "isHidden": true }
+      ]
     }
   ]
 }

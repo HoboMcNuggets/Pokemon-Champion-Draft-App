@@ -98,6 +98,64 @@
 
 
 
+  function formatAbilityName(ability) {
+
+    if (!ability || !ability.name) return '';
+
+    if (ability.isHidden) return `${ability.name} (Hidden)`;
+
+    return ability.name;
+
+  }
+
+
+
+  function renderAbilitiesList(pokemon, options) {
+
+    const opts = options || {};
+
+    const listClass = opts.listClass || 'ability-list';
+
+    const itemClass = opts.itemClass || 'ability-list__item';
+
+    const hiddenClass = opts.hiddenClass || 'ability-list__item--hidden';
+
+    const abilities = pokemon?.abilities;
+
+    if (!Array.isArray(abilities) || abilities.length === 0) return '';
+
+    const items = abilities
+
+      .map((ability) => {
+
+        const cls = ability.isHidden ? `${itemClass} ${hiddenClass}` : itemClass;
+
+        const label = formatAbilityName(ability);
+
+        return `<li class="${cls}">${escapeHtml(label)}</li>`;
+
+      })
+
+      .join('');
+
+    return `<ul class="${listClass}">${items}</ul>`;
+
+  }
+
+
+
+  function escapeHtml(s) {
+
+    const d = document.createElement('div');
+
+    d.textContent = s;
+
+    return d.innerHTML;
+
+  }
+
+
+
   global.PokemonSpecies = {
 
     STAT_KEYS,
@@ -111,6 +169,10 @@
     countPoolStats,
 
     searchPokemon,
+
+    formatAbilityName,
+
+    renderAbilitiesList,
 
   };
 

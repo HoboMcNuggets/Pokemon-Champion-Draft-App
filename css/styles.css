@@ -511,11 +511,12 @@ input[type="file"] {
   margin-top: 1rem;
 }
 
-/* Bascule Config / Stream — position fixe identique dans les deux modes */
+/* Bascule Config / Stream — fixe en bas à droite (Config) ; ancrée caméra J8 en Stream */
 .view-mode-switch {
   position: fixed;
-  top: 0.5rem;
+  bottom: 0.5rem;
   right: 0.5rem;
+  top: auto;
   z-index: 300;
   display: inline-flex;
   border: 1px solid var(--border);
@@ -550,6 +551,10 @@ input[type="file"] {
 
 .stream-mode .view-mode-switch {
   display: inline-flex !important;
+  position: absolute;
+  bottom: 0.25rem;
+  right: 0.25rem;
+  top: auto;
   z-index: 400;
   border-color: rgba(255, 215, 0, 0.6);
   background: rgba(10, 12, 18, 0.95);

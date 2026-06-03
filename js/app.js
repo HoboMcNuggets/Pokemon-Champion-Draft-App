@@ -2,7 +2,7 @@
  * Application draft Pokémon — opérateur stream.
  */
 (function () {
-  const { DraftState } = window;
+  const { DraftState, SpriteImg } = window;
   const PHASE = DraftState.PHASE;
   const { DraftStorage } = window;
   const { PoolImport } = window;
@@ -23,16 +23,24 @@
       sortDir: 'asc',
       enabledFilter: 'all',
     },
+    pokedexSelectedId: null,
     lastConfigTab: 'draft',
   };
   let editingPlayerName = null;
   let slotPickerContext = null;
+  /** Référence persistante — le panneau J8 est re-rendu à chaque tick stream. */
+  let viewModeSwitchEl = null;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
 
   function showMessage(text, type) {
     const bar = $('#message-bar');
+    if (!bar) return;
+    if (isStreamMode()) {
+      bar.classList.add('hidden');
+      return;
+    }
     if (!text) {
       bar.classList.add('hidden');
       return;
@@ -66,6 +74,11 @@
     renderAll();
   }
 
+  function isPokedexTabActive() {
+    const panel = document.getElementById('panel-pokedex');
+    return panel?.classList.contains('active') ?? false;
+  }
+
   function switchToTab(tabId) {
     const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
     if (!btn) return;
@@ -80,6 +93,9 @@
     $$('.tab-panel').forEach((p) => {
       p.classList.toggle('active', p.dataset.panel === tabId);
     });
+    if (tabId === 'pokedex') {
+      renderPokedex();
+    }
   }
 
   function loadInitial() {
@@ -162,7 +178,7 @@
           const pick = team[s];
           const slotAttrs = `data-player="${i}" data-slot="${s}" role="button" tabindex="0" title="Choisir un Pokémon"`;
           if (pick) {
-            return `<div class="team-slot team-slot--clickable" ${slotAttrs}><img src="${escapeAttr(pick.spriteUrl)}" onerror="this.src='assets/sprites/placeholder.svg'" alt="${escapeAttr(pick.name)}" title="${escapeAttr(pick.name)}"></div>`;
+            return `<div class="team-slot team-slot--clickable" ${slotAttrs}>${SpriteImg.tag(pick.spriteUrl, { alt: pick.name, draggable: false })}</div>`;
           }
           return `<div class="team-slot empty team-slot--clickable" ${slotAttrs}><img src="assets/pokemon-ball.png" alt=""></div>`;
         }).join('');
@@ -289,7 +305,7 @@
         const sel = state.selectedPokemonId === p.id;
         return `
         <div class="search-result-item ${sel ? 'selected' : ''}" data-id="${escapeAttr(p.id)}" role="button" tabindex="0">
-          <img src="${escapeAttr(p.spriteUrl)}" onerror="this.src='assets/sprites/placeholder.svg'" alt="">
+          ${SpriteImg.tag(p.spriteUrl)}
           <div class="search-result-item__info">
             <div class="search-result-item__name">${escapeHtml(p.name)}</div>
             <div class="search-result-item__meta">${escapeHtml(p.pokedexId)} · BST ${PokemonSpecies.getBaseTotal(p)}</div>
@@ -395,6 +411,28 @@
     }
   }
 
+  function getViewModeSwitchEl() {
+    if (!viewModeSwitchEl) {
+      viewModeSwitchEl = document.querySelector('.view-mode-switch');
+    }
+    return viewModeSwitchEl;
+  }
+
+  function placeViewModeSwitch() {
+    const sw = getViewModeSwitchEl();
+    if (!sw) return;
+    if (isStreamMode()) {
+      const anchor = document.getElementById('view-mode-switch-anchor');
+      if (anchor && sw.parentElement !== anchor) {
+        anchor.appendChild(sw);
+      }
+      return;
+    }
+    if (sw.parentElement !== document.body) {
+      document.body.appendChild(sw);
+    }
+  }
+
   function setViewMode(mode) {
     const stream = mode === 'stream';
     document.body.classList.toggle('stream-mode', stream);
@@ -408,6 +446,8 @@
     }
 
     placeMessageBar();
+    placeViewModeSwitch();
+    if (stream) showMessage('');
 
     $$('.view-mode-btn').forEach((btn) => {
       const active = btn.dataset.viewMode === mode;
@@ -433,8 +473,11 @@
     renderSearch();
     updateSidebarStats();
     updateControls();
-    renderPokedex();
+    if (isPokedexTabActive()) {
+      renderPokedex();
+    }
     if (StreamView) StreamView.render(state, poolData);
+    placeViewModeSwitch();
   }
 
   function banSelection() {
@@ -447,15 +490,8 @@
       return;
     }
 
-    const playerIndex = DraftState.getActivePlayerIndex(state);
-    const playerName = state.players[playerIndex]?.name || `Joueur ${playerIndex + 1}`;
     state = DraftState.applyBan(state, pokemon);
     clearPokemonSearch();
-    const msg =
-      state.phase === PHASE.DRAFT
-        ? `Ban enregistré : ${pokemon.name} (${playerName}). Phase draft.`
-        : `Ban enregistré : ${pokemon.name} (${playerName})`;
-    showMessage(msg, 'success');
     persist();
     renderAll();
     if (isStreamMode() && StreamView?.onTurnActionCompleted) {
@@ -474,10 +510,8 @@
       return;
     }
 
-    const playerName = state.players[playerIndex]?.name || `Joueur ${playerIndex + 1}`;
     state = DraftState.assignPick(state, playerIndex, pokemon);
     clearPokemonSearch();
-    showMessage(`Pick enregistré : ${pokemon.name} → ${playerName}`, 'success');
     persist();
     renderAll();
     if (isStreamMode() && StreamView?.onTurnActionCompleted) {
@@ -493,14 +527,12 @@
     }
     state = DraftState.startDraft(state);
     persist();
-    showMessage('Phase bans démarrée. Recherchez un Pokémon, puis Bannir.', 'success');
     renderAll();
   }
 
   function undo() {
     state = DraftState.undo(state);
     persist();
-    showMessage('Dernière action annulée.', 'info');
     renderAll();
     if (isStreamMode() && StreamView?.onTurnActionCompleted) {
       StreamView.onTurnActionCompleted();
@@ -547,7 +579,7 @@
       .map(
         (p) => `
         <div class="search-result-item slot-picker-item" data-id="${escapeAttr(p.id)}" role="button" tabindex="0">
-          <img src="${escapeAttr(p.spriteUrl)}" onerror="this.src='assets/sprites/placeholder.svg'" alt="">
+          ${SpriteImg.tag(p.spriteUrl)}
           <div class="search-result-item__info">
             <div class="search-result-item__name">${escapeHtml(p.name)}</div>
             <div class="search-result-item__meta">${escapeHtml(p.pokedexId)} · BST ${PokemonSpecies.getBaseTotal(p)}</div>
@@ -577,7 +609,6 @@
     state = DraftState.setTeamSlot(state, playerIndex, slotIndex, pokemon);
     closeSlotPicker();
     persist();
-    showMessage(`${pokemon.name} assigné à ${state.players[playerIndex]?.name || `Joueur ${playerIndex + 1}`}.`, 'success');
     renderAll();
   }
 
@@ -587,12 +618,9 @@
     const { playerIndex, slotIndex } = slotPickerContext;
     if (!DraftState.canClearTeamSlot(state, playerIndex, slotIndex)) return;
 
-    const playerName = state.players[playerIndex]?.name || `Joueur ${playerIndex + 1}`;
-    const removedName = state.teams[playerIndex]?.[slotIndex]?.name || 'Pokémon';
     state = DraftState.setTeamSlot(state, playerIndex, slotIndex, null);
     closeSlotPicker();
     persist();
-    showMessage(`${removedName} retiré de ${playerName}.`, 'success');
     renderAll();
   }
 
@@ -691,7 +719,6 @@
         state = DraftState.resetDraft(true);
         state = DraftState.setPlayerNames(state, players);
         persist();
-        showMessage('Draft réinitialisé.', 'success');
         renderAll();
       }
     );
@@ -821,7 +848,10 @@
   function onPokedexFilterEvent(e, extra) {
     const f = uiState.pokedexFilters;
 
-    if (extra?.sortKey) {
+    if (extra?.pokemonId) {
+      uiState.pokedexSelectedId =
+        uiState.pokedexSelectedId === extra.pokemonId ? null : extra.pokemonId;
+    } else if (extra?.sortKey) {
       if (f.sortKey === extra.sortKey) {
         f.sortDir = f.sortDir === 'asc' ? 'desc' : 'asc';
       } else {

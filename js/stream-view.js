@@ -6,7 +6,8 @@
 
 (function (global) {
 
-  const PLACEHOLDER = 'assets/sprites/placeholder.svg';
+  const { SpriteImg } = global;
+  const PLACEHOLDER = SpriteImg.PLACEHOLDER;
   const POKEBALL = 'assets/pokemon-ball.png';
 
   /** Durée du timer par tour en secondes (modifier ici si besoin). */
@@ -98,12 +99,15 @@
     const slots = Array.from({ length: pickCount }, (_, s) => {
       const pick = team[s];
       if (pick) {
-        return `<div class="stream-slot stream-slot--filled"><img class="stream-slot__sprite" src="${escapeAttr(pick.spriteUrl)}" onerror="this.src='${PLACEHOLDER}'" alt="${escapeAttr(pick.name)}"></div>`;
+        return `<div class="stream-slot stream-slot--filled">${SpriteImg.tag(pick.spriteUrl, { className: 'stream-slot__sprite', alt: pick.name })}</div>`;
       }
       return `<div class="stream-slot stream-slot--empty"><img class="stream-slot__ball" src="${POKEBALL}" alt=""></div>`;
     }).join('');
 
-    const camBlock = '<div class="stream-player__cam">Caméra</div>';
+    const camBlock =
+      index === 7
+        ? '<div class="stream-player__cam view-mode-switch-anchor" id="view-mode-switch-anchor"><span class="stream-player__cam-label" aria-hidden="true">Caméra</span></div>'
+        : '<div class="stream-player__cam">Caméra</div>';
     const slotsBlock = `<div class="stream-player__slots">${slots}</div>`;
     const bodyContent =
       side === 'left' ? camBlock + slotsBlock : slotsBlock + camBlock;
@@ -171,6 +175,23 @@
 
 
 
+  function renderAbilitiesBlock(pokemon) {
+    if (!pokemon) return '';
+    const listHtml = global.PokemonSpecies.renderAbilitiesList(pokemon, {
+      listClass: 'stream-ability-list',
+      itemClass: 'stream-ability-list__item',
+      hiddenClass: 'stream-ability-list__item--hidden',
+    });
+    if (!listHtml) return '';
+    return `
+      <div class="stream-abilities">
+        <h3 class="stream-abilities__title">Abilities</h3>
+        ${listHtml}
+      </div>`;
+  }
+
+
+
   function renderSpotlight(pokemon) {
     const frameEl = document.getElementById('stream-spotlight-frame');
     const detailsEl = document.getElementById('stream-spotlight-details');
@@ -186,7 +207,10 @@
     }
 
     frameEl.className = 'stream-spotlight__frame';
-    frameEl.innerHTML = `<img class="stream-spotlight__sprite" src="${escapeAttr(pokemon.spriteUrl)}" onerror="this.src='${PLACEHOLDER}'" alt="${escapeAttr(pokemon.name)}">`;
+    frameEl.innerHTML = SpriteImg.tag(pokemon.spriteUrl, {
+      className: 'stream-spotlight__sprite',
+      alt: pokemon.name,
+    });
 
     const t2 = pokemon.type2
       ? `<span class="${typeOrbClass(pokemon.type2)}">${escapeHtml(pokemon.type2)}</span>`
@@ -199,7 +223,8 @@
         <span class="${typeOrbClass(pokemon.type1)}">${escapeHtml(pokemon.type1)}</span>
         ${t2}
       </div>
-      <div class="stream-stats">${renderStatsBars(pokemon)}</div>`;
+      <div class="stream-stats">${renderStatsBars(pokemon)}</div>
+      ${renderAbilitiesBlock(pokemon)}`;
   }
 
 
@@ -228,7 +253,7 @@
 
       <div class="stream-banned__item" title="${escapeAttr(b.pokemon.name)}">
 
-        <img src="${escapeAttr(b.pokemon.spriteUrl)}" onerror="this.src='${PLACEHOLDER}'" alt="">
+        ${SpriteImg.tag(b.pokemon.spriteUrl)}
 
       </div>`
 
@@ -363,70 +388,74 @@
     startTurnTimerCountdown();
   }
 
+  let lastRenderSnapshot = {
+    teamsKey: '',
+    active: -2,
+    spotlightId: null,
+    bansKey: '',
+  };
 
+  function getTeamsKey(state) {
+    const names = (state.players || []).map((p) => p.name).join('\0');
+    return `${names}|${JSON.stringify(state.teams)}`;
+  }
+
+  function getBansKey(state) {
+    return (state.bans || []).map((b) => b.pokemonId).join(',');
+  }
+
+  function updateActivePlayerPanels(active) {
+    document.querySelectorAll('.stream-player').forEach((el) => {
+      el.classList.toggle('active', Number(el.dataset.player) === active);
+    });
+  }
+
+  function renderPlayerSide(container, state, indices, active, side) {
+    container.innerHTML = indices
+      .map((i) =>
+        renderPlayerPanel(
+          state.players[i],
+          i,
+          state.teams[i] || [],
+          i === active,
+          side
+        )
+      )
+      .join('');
+  }
 
   function render(state, poolData) {
-
     const active = global.DraftState.getActivePlayerIndex(state);
+    const teamsKey = getTeamsKey(state);
+    const bansKey = getBansKey(state);
+    const spotlightPokemon = getSpotlightPokemon(state, poolData);
+    const spotlightId = spotlightPokemon?.id ?? null;
 
     const left = document.getElementById('stream-left');
-
     const right = document.getElementById('stream-right');
 
-
-
-    if (left) {
-
-      left.innerHTML = [0, 1, 2, 3]
-
-        .map((i) =>
-
-          renderPlayerPanel(
-            state.players[i],
-            i,
-            state.teams[i] || [],
-            i === active,
-            'left'
-          )
-
-        )
-
-        .join('');
-
+    if (teamsKey !== lastRenderSnapshot.teamsKey) {
+      if (left) renderPlayerSide(left, state, [0, 1, 2, 3], active, 'left');
+      if (right) renderPlayerSide(right, state, [4, 5, 6, 7], active, 'right');
+      lastRenderSnapshot.teamsKey = teamsKey;
+      lastRenderSnapshot.active = active;
+    } else if (active !== lastRenderSnapshot.active) {
+      updateActivePlayerPanels(active);
+      lastRenderSnapshot.active = active;
     }
 
-
-
-    if (right) {
-
-      right.innerHTML = [4, 5, 6, 7]
-
-        .map((i) =>
-
-          renderPlayerPanel(
-            state.players[i],
-            i,
-            state.teams[i] || [],
-            i === active,
-            'right'
-          )
-
-        )
-
-        .join('');
-
+    if (spotlightId !== lastRenderSnapshot.spotlightId) {
+      renderSpotlight(spotlightPokemon);
+      lastRenderSnapshot.spotlightId = spotlightId;
     }
 
-
-
-    renderSpotlight(getSpotlightPokemon(state, poolData));
-
-    renderBanned(state);
+    if (bansKey !== lastRenderSnapshot.bansKey) {
+      renderBanned(state);
+      lastRenderSnapshot.bansKey = bansKey;
+    }
 
     renderTopBar(state);
-
     renderTurnTimer(state);
-
   }
 
 

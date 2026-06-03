@@ -11,7 +11,7 @@ Application HTML / JavaScript pour animer un draft Pokémon à 8 joueurs (bans e
 ## Onglets (mode Config)
 
 - **Draft** : grille des 8 joueurs (noms éditables, équipes modifiables), suivi des bans et picks, export / import JSON, réinitialisation.
-- **Pokédex** : liste complète (~1300 Pokémon), stats, types, BST, recherche et filtres Actif / Inactif.
+- **Pokédex** : liste complète (~1300 Pokémon), stats, types, habiletés, BST, recherche et filtres Actif / Inactif. Clic sur une ligne pour afficher le détail (stats + abilities).
 
 ## Flux bans + draft
 
@@ -25,8 +25,9 @@ Le joueur **En cours** est imposé : pas de choix manuel du destinataire.
 
 Fichier principal : `data/pokemon-pokedex.json`. Modèle réduit : `data/pokemon-pool.example.json`.
 
-Champs obligatoires : `pokedexId`, `id`, `name`, types, stats, `spriteUrl`, `enabled`, `speciesKey`, `isMega`.
+Champs obligatoires : `pokedexId`, `id`, `name`, types, stats, `spriteUrl`, `enabled`, `speciesKey`, `isMega`, `abilities`.
 
+- `abilities` : tableau de 1 à 3 objets `{ "name": "Overgrow", "isHidden": false }` (noms anglais, `isHidden: true` pour le talent caché).
 - `enabled: true` → éligible au draft (pool Champions).
 - `enabled: false` → visible dans le Pokédex, exclu du draft.
 - Même `speciesKey` pour base / méga / régional → une sélection retire toute la famille.
@@ -51,7 +52,7 @@ Pour régénérer le JS embarqué seul :
 node scripts/json-to-pokedex-js.mjs
 ```
 
-Sources : [PokeAPI](https://pokeapi.co/) (stats), sprites Pokémon Showdown (animés) avec repli artwork PokeAPI. Les Pokémon actifs du fichier `data/pokemon-pool.champions-s1.json` sont marqués `enabled: true`.
+Sources : [PokeAPI](https://pokeapi.co/) (stats et habiletés via `/pokemon` + `/ability`), sprites Pokémon Showdown (animés) avec repli artwork PokeAPI. Les Pokémon actifs du fichier `data/pokemon-pool.champions-s1.json` sont marqués `enabled: true`.
 
 ## Modes Configuration / Stream
 
@@ -66,7 +67,7 @@ En haut de l'écran, basculez entre **Configuration** (opérateur) et **Stream**
 **Stream** :
 
 - 4 joueurs à gauche, 4 à droite (zone caméra + grille 8 Pokéballs / sprites en 4 colonnes)
-- Centre : Pokémon sélectionné, avec stats en barres
+- Centre : Pokémon sélectionné, avec stats en barres et habiletés en dessous
 - Bas : liste globale des bannis
 - Sous la recherche : **Bannir** (phase bans) ou **Choisir** (phase draft) + retour arrière
 

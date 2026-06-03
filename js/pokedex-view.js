@@ -15,6 +15,23 @@
     return `<span class="type-badge ${cls}">${escapeHtml(type)}</span>`;
   }
 
+  function renderAbilitiesCell(pokemon) {
+    const abilities = pokemon?.abilities;
+    if (!Array.isArray(abilities) || abilities.length === 0) {
+      return '<td class="pokedex-table__abilities"><span class="pokedex-table__empty">—</span></td>';
+    }
+    const lines = abilities
+      .map((ability) => {
+        const label = global.PokemonSpecies.formatAbilityName(ability);
+        if (!label) return '';
+        const hiddenClass = ability.isHidden ? ' pokedex-table-ability--hidden' : '';
+        return `<span class="pokedex-table-ability${hiddenClass}">${escapeHtml(label)}</span>`;
+      })
+      .filter(Boolean)
+      .join('');
+    return `<td class="pokedex-table__abilities"><div class="pokedex-table-abilities">${lines}</div></td>`;
+  }
+
   function escapeHtml(s) {
     const d = document.createElement('div');
     d.textContent = s;
@@ -22,8 +39,10 @@
   }
 
   function spriteImg(pokemon) {
-    const src = pokemon.spriteUrl || PLACEHOLDER;
-    return `<img src="${escapeHtml(src)}" alt="${escapeHtml(pokemon.name)}" loading="lazy" onerror="this.src='${PLACEHOLDER}'">`;
+    return global.SpriteImg.tag(pokemon.spriteUrl || PLACEHOLDER, {
+      alt: pokemon.name,
+      loading: 'lazy',
+    });
   }
 
   function filterList(pool, filters) {
@@ -64,19 +83,25 @@
     return list;
   }
 
-  function renderTable(container, list) {
+  function renderTable(container, list, selectedId) {
     const rows = list
       .map((p) => {
-        const rowClass = !p.enabled ? 'row-inactif' : '';
+        const rowClass = [
+          !p.enabled ? 'row-inactif' : '',
+          selectedId === p.id ? 'pokedex-row--selected' : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
         const bst = global.PokemonSpecies.getBaseTotal(p);
         const statutCol = p.enabled ? 'Actif' : 'Inactif';
         const megaCol = p.isMega ? 'Oui' : '—';
-        return `<tr class="${rowClass}">
+        return `<tr class="${rowClass}" data-pokemon-id="${escapeAttr(p.id)}">
           <td>${escapeHtml(p.pokedexId)}</td>
           <td>${spriteImg(p)}</td>
           <td>${escapeHtml(p.name)}</td>
           <td>${renderTypeBadge(p.type1)}</td>
           <td>${renderTypeBadge(p.type2 || '')}</td>
+          ${renderAbilitiesCell(p)}
           <td><strong>${bst}</strong></td>
           <td>${p.hp}</td>
           <td>${p.attack}</td>
@@ -99,6 +124,7 @@
             <th class="sortable" data-sort="name">Pokémon</th>
             <th>Type 1</th>
             <th>Type 2</th>
+            <th>Habileté</th>
             <th class="sortable" data-sort="baseTotal">BST</th>
             <th class="sortable" data-sort="hp">PV</th>
             <th class="sortable" data-sort="attack">Attaque</th>
@@ -112,6 +138,61 @@
         </thead>
         <tbody>${rows}</tbody>
       </table>`;
+  }
+
+  function escapeAttr(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function renderDetailPanel(pokemon) {
+    if (!pokemon) return '';
+    const bst = global.PokemonSpecies.getBaseTotal(pokemon);
+    const statRows = [
+      { label: 'BST', value: bst },
+      { label: 'PV', value: pokemon.hp },
+      { label: 'Attaque', value: pokemon.attack },
+      { label: 'Défense', value: pokemon.defense },
+      { label: 'Atq. Spé.', value: pokemon.spAtk },
+      { label: 'Déf. Spé.', value: pokemon.spDef },
+      { label: 'Vitesse', value: pokemon.speed },
+    ]
+      .map(
+        (s) =>
+          `<div class="pokedex-stats-grid__item"><span class="pokedex-stats-grid__label">${s.label}</span><span class="pokedex-stats-grid__value">${s.value}</span></div>`
+      )
+      .join('');
+    const abilitiesHtml = global.PokemonSpecies.renderAbilitiesList(pokemon, {
+      listClass: 'ability-list',
+      itemClass: 'ability-list__item',
+      hiddenClass: 'ability-list__item--hidden',
+    });
+    return `
+      <div class="pokedex-detail">
+        <div class="pokedex-detail__header">
+          <div class="pokedex-detail__sprite">${spriteImg(pokemon)}</div>
+          <div class="pokedex-detail__title">
+            <h3>${escapeHtml(pokemon.name)}</h3>
+            <div class="pokedex-detail__dex">${escapeHtml(pokemon.pokedexId)}</div>
+            <div class="pokedex-detail__types">
+              ${renderTypeBadge(pokemon.type1)}
+              ${renderTypeBadge(pokemon.type2 || '')}
+            </div>
+          </div>
+        </div>
+        <div class="pokedex-detail__stats">
+          <h4>Statistiques</h4>
+          <div class="pokedex-stats-grid">${statRows}</div>
+        </div>
+        <div class="pokedex-detail__abilities">
+          <h4>Abilities</h4>
+          ${abilitiesHtml || '<p class="pokedex-detail__empty">Aucune habileté.</p>'}
+        </div>
+      </div>`;
   }
 
   function renderHeader(headerEl, poolData, filters, list) {
@@ -192,8 +273,17 @@
       return;
     }
 
+    const selectedId = uiState.pokedexSelectedId || null;
+    const selectedPokemon = selectedId
+      ? list.find((p) => p.id === selectedId) || pool.find((p) => p.id === selectedId)
+      : null;
+
     contentEl.innerHTML = '<div class="pokedex-table-wrap"></div>';
-    renderTable(contentEl.firstElementChild, list);
+    renderTable(contentEl.querySelector('.pokedex-table-wrap'), list, selectedPokemon?.id || null);
+
+    if (selectedPokemon) {
+      contentEl.insertAdjacentHTML('beforeend', renderDetailPanel(selectedPokemon));
+    }
   }
 
   function bindFilters(root, onChange) {
@@ -206,7 +296,14 @@
     });
     root.addEventListener('click', (e) => {
       const th = e.target.closest('th.sortable');
-      if (th) onChange(e, { sortKey: th.dataset.sort });
+      if (th) {
+        onChange(e, { sortKey: th.dataset.sort });
+        return;
+      }
+      const row = e.target.closest('tr[data-pokemon-id]');
+      if (row) {
+        onChange(e, { pokemonId: row.dataset.pokemonId });
+      }
     });
   }
 
