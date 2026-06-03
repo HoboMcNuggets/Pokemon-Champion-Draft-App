@@ -17,6 +17,8 @@
 
   <link rel="stylesheet" href="css/stream-layout.css">
 
+  <link rel="stylesheet" href="css/draft-recap.css">
+
   <link rel="stylesheet" href="css/type-themes.css">
 
 </head>
@@ -25,7 +27,7 @@
 
   <div id="view-mode-switch-anchor-fixed" class="view-mode-switch-anchor-fixed" aria-hidden="true">
     <div class="view-mode-switch" role="group" aria-label="Mode d'affichage">
-      <button type="button" class="view-mode-btn active" data-view-mode="config" id="btn-mode-config" title="Mode configuration">Config</button>
+      <button type="button" class="view-mode-btn active" data-view-mode="config" id="btn-mode-config" title="Mode tableau de bord">Tableau de bord</button>
       <button type="button" class="view-mode-btn" data-view-mode="stream" id="btn-mode-stream" title="Mode stream">Stream</button>
     </div>
   </div>
@@ -38,36 +40,13 @@
 
     <nav class="tab-nav" role="tablist">
 
-      <button type="button" class="tab-btn active" data-tab="draft" role="tab" aria-selected="true">Configuration</button>
+      <button type="button" class="tab-btn active" data-tab="draft" role="tab" aria-selected="true">Tableau de bord</button>
 
       <button type="button" class="tab-btn" data-tab="pokedex" role="tab">Pokédex</button>
 
-    </nav>
+      <button type="button" class="tab-btn" data-tab="settings" role="tab">Configuration</button>
 
-    <div id="theme-switch-anchor-header" class="theme-switch-anchor-header">
-      <div class="theme-switch" role="group" aria-label="Thème de couleur">
-        <button type="button" class="theme-btn active" data-theme-id="default" title="Thème Centre Pokémon — modèle d'origine" aria-label="Centre Pokémon" aria-pressed="true"></button>
-        <button type="button" class="theme-btn" data-theme-id="normal" title="Type Normal" aria-label="Normal" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="fire" title="Type Feu" aria-label="Feu" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="water" title="Type Eau" aria-label="Eau" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="electric" title="Type Électrik" aria-label="Électrik" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="grass" title="Type Plante" aria-label="Plante" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="ice" title="Type Glace" aria-label="Glace" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="fighting" title="Type Combat" aria-label="Combat" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="poison" title="Type Poison" aria-label="Poison" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="ground" title="Type Sol" aria-label="Sol" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="flying" title="Type Vol" aria-label="Vol" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="psychic" title="Type Psy" aria-label="Psy" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="bug" title="Type Insecte" aria-label="Insecte" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="rock" title="Type Roche" aria-label="Roche" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="ghost" title="Type Spectre" aria-label="Spectre" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="dragon" title="Type Dragon" aria-label="Dragon" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="dark" title="Type Ténèbres" aria-label="Ténèbres" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="steel" title="Type Acier" aria-label="Acier" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="fairy" title="Type Fée" aria-label="Fée" aria-pressed="false"></button>
-        <button type="button" class="theme-btn" data-theme-id="stellar" title="Type Stellaire" aria-label="Stellaire" aria-pressed="false"></button>
-      </div>
-    </div>
+    </nav>
 
   </header>
 
@@ -78,11 +57,62 @@
     <div class="phase-banner">
 
       <div class="phase-banner__header">
-        <div class="phase-banner__phase" id="phase-label">Configuration</div>
+        <div class="phase-banner__phase" id="phase-label">Tableau de bord</div>
         <div id="message-bar" class="message-bar message-bar--inline hidden" role="status"></div>
       </div>
 
-      <div class="phase-banner__active" id="active-player-label">—</div>
+      <div class="phase-banner__dashboard" id="phase-dashboard">
+        <section class="phase-banner__section phase-banner__section--pool" aria-label="Statistiques du pool">
+          <h4 class="phase-banner__section-title">Pool</h4>
+          <div class="phase-banner__stat-cards">
+            <article class="phase-banner__stat-card">
+              <span class="phase-banner__stat-value" id="banner-pokedex-total">—</span>
+              <span class="phase-banner__stat-label">Pokédex</span>
+              <span class="phase-banner__stat-sub" id="banner-pokedex-total-sub" aria-hidden="true"></span>
+            </article>
+            <article class="phase-banner__stat-card phase-banner__stat-card--accent">
+              <span class="phase-banner__stat-value" id="banner-pokedex-active">—</span>
+              <span class="phase-banner__stat-label">Actifs</span>
+              <span class="phase-banner__stat-sub" id="banner-pokedex-active-sub" aria-hidden="true"></span>
+            </article>
+            <article class="phase-banner__stat-card">
+              <span class="phase-banner__stat-value" id="banner-mega-count">—</span>
+              <span class="phase-banner__stat-label">Mégas</span>
+              <span class="phase-banner__stat-sub" id="banner-mega-sub" aria-hidden="true"></span>
+            </article>
+          </div>
+          <div class="phase-banner__types-wrap">
+            <p class="phase-banner__types-heading">Types (actifs, double type compté deux fois)</p>
+            <div class="phase-banner__types-grid" id="banner-type-counts" aria-label="Répartition par type"></div>
+          </div>
+        </section>
+
+        <section class="phase-banner__section phase-banner__section--session" aria-label="Session en cours">
+          <h4 class="phase-banner__section-title">Session</h4>
+          <div class="phase-banner__session-panel">
+            <div class="phase-banner__session-meta">
+              <span class="phase-banner__badge" id="banner-session-phase">—</span>
+              <span class="phase-banner__turn" id="banner-session-turn-wrap">
+                Tour <strong id="banner-session-turn">—</strong><span id="banner-session-turn-max"></span>
+              </span>
+            </div>
+            <div class="phase-banner__session-focus">
+              <div class="phase-banner__focus-block">
+                <span class="phase-banner__focus-label">En cours</span>
+                <span class="phase-banner__focus-value" id="banner-session-active">—</span>
+              </div>
+              <div class="phase-banner__focus-block phase-banner__focus-block--timer">
+                <span class="phase-banner__focus-label">Temps restant</span>
+                <span class="phase-banner__focus-value" id="banner-session-timer">—</span>
+              </div>
+            </div>
+            <div class="phase-banner__session-next">
+              <span class="phase-banner__next-label">Prochain</span>
+              <span class="phase-banner__next-value" id="banner-session-next">—</span>
+            </div>
+          </div>
+        </section>
+      </div>
 
       <div class="phase-banner__hint" id="phase-hint"></div>
 
@@ -96,7 +126,9 @@
 
       <p>Tous les picks ont été enregistrés.</p>
 
-      <button type="button" class="btn btn-primary" id="btn-new-game">Nouvelle partie</button>
+      <div id="dashboard-recap" class="draft-recap-dashboard hidden" aria-label="Récapitulatif du draft"></div>
+
+      <button type="button" class="btn btn-primary" id="btn-new-game">Nouveau draft</button>
 
     </div>
 
@@ -139,6 +171,7 @@
               </div>
             </div>
           </div>
+          <div id="stream-recap" class="stream-recap hidden" aria-label="Récapitulatif du draft"></div>
           <footer class="stream-banned">
             <h2 class="stream-banned__title">Bannis</h2>
             <div class="stream-banned__list" id="stream-banned-list"></div>
@@ -159,41 +192,6 @@
 
 
 
-      <div class="draft-workspace" id="draft-workspace">
-
-        <div id="operator-dock" class="operator-dock operator-dock--classic">
-          <p class="operator-dock__hint">Passez en mode Stream pour bannir et draft.</p>
-        </div>
-
-        <aside class="sidebar-panel operator-only">
-
-          <h3>État du pool</h3>
-
-          <p class="stats-line">Dispo draft : <strong id="stat-available">—</strong></p>
-
-          <p class="stats-line">Bans : <strong id="stat-bans">0</strong> / <span id="stat-bans-max">16</span></p>
-          <p class="stats-line">Picks : <strong id="stat-picks">0</strong> / <span id="stat-picks-max">64</span></p>
-
-        </aside>
-
-      </div>
-
-
-
-      <div class="toolbar operator-only">
-
-        <button type="button" class="btn btn-secondary" id="btn-undo">Retour</button>
-
-        <button type="button" class="btn btn-secondary" id="btn-export">Exporter le draft</button>
-
-        <button type="button" class="btn btn-secondary" id="btn-import">Importer le draft</button>
-
-        <input type="file" id="draft-import-file" class="hidden" accept=".json,application/json">
-
-        <button type="button" class="btn btn-danger" id="btn-reset-draft">Réinitialiser le draft</button>
-
-      </div>
-
     </div>
 
   </section>
@@ -204,6 +202,67 @@
     <div id="pokedex-root">
       <div class="pokedex-header"></div>
       <div class="pokedex-content"></div>
+    </div>
+  </section>
+
+
+
+  <section id="panel-settings" class="tab-panel" data-panel="settings">
+    <div class="settings-panel">
+      <h2 class="settings-panel__title">Configuration</h2>
+
+      <section class="settings-section" aria-labelledby="settings-timer-heading">
+        <h3 id="settings-timer-heading" class="settings-section__title">Timer (mode Stream)</h3>
+        <p class="settings-section__hint">Durée par tour. Appliquée au prochain tour en cours de draft.</p>
+        <div class="settings-timer-fields">
+          <label class="settings-field">
+            <span class="settings-field__label">Minutes</span>
+            <input type="number" id="config-timer-min" class="settings-field__input" min="0" max="10" value="1" inputmode="numeric">
+          </label>
+          <label class="settings-field">
+            <span class="settings-field__label">Secondes</span>
+            <input type="number" id="config-timer-sec" class="settings-field__input" min="0" max="59" value="0" inputmode="numeric">
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-section" aria-labelledby="settings-theme-heading">
+        <h3 id="settings-theme-heading" class="settings-section__title">Thème</h3>
+        <div id="theme-switch-anchor-settings" class="theme-switch-anchor-settings">
+          <div class="theme-switch theme-switch--settings" role="group" aria-label="Thème de couleur">
+            <button type="button" class="theme-btn active" data-theme-id="default" title="Thème Centre Pokémon — modèle d'origine" aria-label="Centre Pokémon" aria-pressed="true"></button>
+            <button type="button" class="theme-btn" data-theme-id="normal" title="Type Normal" aria-label="Normal" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="fire" title="Type Feu" aria-label="Feu" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="water" title="Type Eau" aria-label="Eau" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="electric" title="Type Électrik" aria-label="Électrik" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="grass" title="Type Plante" aria-label="Plante" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="ice" title="Type Glace" aria-label="Glace" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="fighting" title="Type Combat" aria-label="Combat" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="poison" title="Type Poison" aria-label="Poison" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="ground" title="Type Sol" aria-label="Sol" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="flying" title="Type Vol" aria-label="Vol" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="psychic" title="Type Psy" aria-label="Psy" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="bug" title="Type Insecte" aria-label="Insecte" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="rock" title="Type Roche" aria-label="Roche" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="ghost" title="Type Spectre" aria-label="Spectre" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="dragon" title="Type Dragon" aria-label="Dragon" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="dark" title="Type Ténèbres" aria-label="Ténèbres" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="steel" title="Type Acier" aria-label="Acier" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="fairy" title="Type Fée" aria-label="Fée" aria-pressed="false"></button>
+            <button type="button" class="theme-btn" data-theme-id="stellar" title="Type Stellaire" aria-label="Stellaire" aria-pressed="false"></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-section" aria-labelledby="settings-draft-heading">
+        <h3 id="settings-draft-heading" class="settings-section__title">Draft</h3>
+        <div class="settings-draft-actions">
+          <button type="button" class="btn btn-secondary" id="btn-export">Exporter le draft</button>
+          <button type="button" class="btn btn-secondary" id="btn-import">Importer le draft</button>
+          <input type="file" id="draft-import-file" class="hidden" accept=".json,application/json">
+          <button type="button" class="btn btn-danger" id="btn-reset-draft">Réinitialiser le draft</button>
+        </div>
+      </section>
     </div>
   </section>
 
@@ -267,6 +326,10 @@
   <script src="js/storage.js"></script>
 
   <script src="js/type-display.js"></script>
+
+  <script src="js/type-chart.js"></script>
+
+  <script src="js/draft-recap.js"></script>
 
   <script src="js/pokedex-view.js"></script>
 

@@ -70,6 +70,10 @@
 
       selectedPokemonId: null,
 
+      draftStartedAt: null,
+
+      draftCompletedAt: null,
+
     };
 
   }
@@ -103,6 +107,42 @@
   function getBanRound(banNumber) {
 
     return Math.floor(banNumber / PLAYER_COUNT) + 1;
+
+  }
+
+
+
+  function getDraftRound(pickNumber) {
+
+    return Math.floor(pickNumber / PLAYER_COUNT) + 1;
+
+  }
+
+
+
+  function getNextPlayerIndex(state) {
+
+    if (state.phase === PHASE.BAN) {
+
+      const nextBan = state.totalBansDone + 1;
+
+      if (nextBan >= TOTAL_BANS) return -1;
+
+      return getBanPlayerIndex(nextBan);
+
+    }
+
+    if (state.phase === PHASE.DRAFT) {
+
+      const nextPick = state.totalPicksDone + 1;
+
+      if (nextPick >= TOTAL_PICKS) return -1;
+
+      return getSnakePlayerIndex(nextPick);
+
+    }
+
+    return -1;
 
   }
 
@@ -188,6 +228,10 @@
 
       selectedPokemonId: null,
 
+      draftStartedAt: null,
+
+      draftCompletedAt: null,
+
     };
 
   }
@@ -260,6 +304,11 @@
 
     const totalBansDone = state.totalBansDone + 1;
 
+    const draftStartedAt =
+      state.totalBansDone === 0 && !state.draftStartedAt
+        ? new Date().toISOString()
+        : state.draftStartedAt;
+
     let next = {
 
       ...state,
@@ -269,6 +318,8 @@
       bans: [...state.bans, entry],
 
       totalBansDone,
+
+      draftStartedAt,
 
       selectedPokemonId: null,
 
@@ -378,6 +429,8 @@
 
       next.phase = PHASE.COMPLETE;
 
+      next.draftCompletedAt = new Date().toISOString();
+
     }
 
 
@@ -434,6 +487,8 @@
 
       next.phase = resolvePhaseAfterUndo(totalBansDone, state.totalPicksDone);
 
+      if (totalBansDone === 0) next.draftStartedAt = null;
+
     } else if (last.kind === 'pick') {
 
       const teams = state.teams.map((t) => [...t]);
@@ -471,6 +526,8 @@
       next.totalPicksDone = totalPicksDone;
 
       next.phase = resolvePhaseAfterUndo(state.totalBansDone, totalPicksDone);
+
+      if (totalPicksDone < TOTAL_PICKS) next.draftCompletedAt = null;
 
     } else if (last.kind === 'slotEdit') {
 
@@ -1104,6 +1161,10 @@
     getBanPlayerIndex,
 
     getBanRound,
+
+    getDraftRound,
+
+    getNextPlayerIndex,
 
     getActivePlayerIndex,
 

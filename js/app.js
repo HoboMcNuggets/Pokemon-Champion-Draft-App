@@ -7,6 +7,7 @@
   const { DraftStorage } = window;
   const { PoolImport } = window;
   const { PokemonSpecies } = window;
+  const { TypeDisplay } = window;
   const { PokedexView } = window;
   const { StreamView } = window;
 
@@ -30,7 +31,7 @@
   let slotPickerContext = null;
   /** Référence persistante — le panneau J8 est re-rendu à chaque tick stream. */
   let viewModeSwitchEl = null;
-  let themeSwitchEl = null;
+  let lastDashboardRecapKey = '';
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
@@ -97,7 +98,9 @@
     if (tabId === 'pokedex') {
       renderPokedex();
     }
-    updateThemeSwitchVisibility();
+    if (tabId === 'settings') {
+      syncTimerConfigFields();
+    }
   }
 
   function loadInitial() {
@@ -121,7 +124,7 @@
   function getPhaseLabel() {
     switch (state.phase) {
       case PHASE.SETUP:
-        return 'Configuration';
+        return 'Tableau de bord';
       case PHASE.BAN:
         return `Phase bans (${state.totalBansDone}/${DraftState.TOTAL_BANS})`;
       case PHASE.DRAFT:
@@ -136,7 +139,7 @@
   function getPhaseHint() {
     if (state.phase === PHASE.SETUP) {
       if (isStreamMode()) {
-        return 'Renommez les joueurs en mode Config si besoin, puis démarrez le draft.';
+        return 'Renommez les joueurs en mode Tableau de bord si besoin, puis démarrez le draft.';
       }
       return 'Renommez les joueurs dans la grille, passez en mode Stream, puis démarrez le draft.';
     }
@@ -144,7 +147,7 @@
       return 'Bans en 2 tours (J1→J8, puis J1→J8) : recherchez, puis Bannir pour le joueur en cours.';
     }
     if (state.phase === PHASE.DRAFT) {
-      return 'Snake draft (8 picks/joueur) : recherchez, puis Choisir pour le joueur en cours.';
+      return '';
     }
     return '';
   }
@@ -180,7 +183,14 @@
           const pick = team[s];
           const slotAttrs = `data-player="${i}" data-slot="${s}" role="button" tabindex="0" title="Choisir un Pokémon"`;
           if (pick) {
-            return `<div class="team-slot team-slot--clickable" ${slotAttrs}>${SpriteImg.tag(pick.spriteUrl, { alt: pick.name, draggable: false })}</div>`;
+            return `<div class="team-slot team-slot--clickable team-slot--filled" ${slotAttrs}>${SpriteImg.renderSlotContent(pick.spriteUrl, {
+              alt: pick.name,
+              draggable: false,
+              id: pick.id,
+              poolData,
+              wrapClass: 'sprite-slot-wrap sprite-slot-wrap--dashboard',
+              megaLabelClass: 'sprite-mega-label sprite-mega-label--dashboard',
+            })}</div>`;
           }
           return `<div class="team-slot empty team-slot--clickable" ${slotAttrs}><img src="assets/pokemon-ball.png" alt=""></div>`;
         }).join('');
@@ -330,32 +340,186 @@
   function updateSidebarStats() {
     const bansMax = $('#stat-bans-max');
     const picksMax = $('#stat-picks-max');
+    const statBans = $('#stat-bans');
+    const statAvailable = $('#stat-available');
+    const statPicks = $('#stat-picks');
+    if (!bansMax && !picksMax && !statBans && !statAvailable && !statPicks) return;
+
     if (bansMax) bansMax.textContent = String(DraftState.TOTAL_BANS);
     if (picksMax) picksMax.textContent = String(DraftState.TOTAL_PICKS);
-    const statBans = $('#stat-bans');
     if (statBans) statBans.textContent = String(state.totalBansDone ?? 0);
 
     if (!poolData) {
-      $('#stat-available').textContent = '—';
+      if (statAvailable) statAvailable.textContent = '—';
       return;
     }
     const counts = PokemonSpecies.countPoolStats(poolData.pokemon, state);
-    $('#stat-available').textContent = String(counts.disponibles);
-    $('#stat-picks').textContent = String(state.totalPicksDone);
+    if (statAvailable) statAvailable.textContent = String(counts.disponibles);
+    if (statPicks) statPicks.textContent = String(state.totalPicksDone);
   }
 
   function renderPhaseBanner() {
+    if (isStreamMode()) return;
     $('#phase-label').textContent = getPhaseLabel();
-    const active = DraftState.getActivePlayerIndex(state);
-    if (active >= 0 && state.players[active] && isPlayingPhase()) {
-      const verb = state.phase === PHASE.BAN ? 'bannez pour' : 'draftez pour';
-      $('#active-player-label').textContent = `En cours : ${state.players[active].name} — ${verb}`;
-    } else if (state.phase === PHASE.COMPLETE) {
-      $('#active-player-label').textContent = 'Draft terminé';
-    } else {
-      $('#active-player-label').textContent = '—';
-    }
     $('#phase-hint').textContent = getPhaseHint();
+    renderBannerPoolStats();
+    renderBannerSession();
+  }
+
+  function setBannerSub(el, text) {
+    if (!el) return;
+    el.textContent = text || '';
+  }
+
+  function setPhaseBadge(el, label, modifier) {
+    if (!el) return;
+    el.textContent = label;
+    el.className = 'phase-banner__badge' + (modifier ? ` phase-banner__badge--${modifier}` : '');
+  }
+
+  function renderBannerPoolStats() {
+    const totalEl = $('#banner-pokedex-total');
+    const activeEl = $('#banner-pokedex-active');
+    const megaEl = $('#banner-mega-count');
+    const typesEl = $('#banner-type-counts');
+    if (!totalEl || !activeEl || !megaEl || !typesEl) return;
+
+    setBannerSub($('#banner-pokedex-total-sub'), '');
+    setBannerSub($('#banner-pokedex-active-sub'), '');
+    setBannerSub($('#banner-mega-sub'), '');
+
+    if (!poolData?.pokemon?.length) {
+      totalEl.textContent = '—';
+      activeEl.textContent = '—';
+      megaEl.textContent = '—';
+      typesEl.innerHTML = '<span class="phase-banner__types-empty">Pool non chargé</span>';
+      return;
+    }
+
+    const stats = PokemonSpecies.countActivePoolStats(poolData.pokemon);
+    totalEl.textContent = String(stats.total);
+    activeEl.textContent = String(stats.actifs);
+    megaEl.textContent = String(stats.megaCount);
+
+    if (stats.total > 0) {
+      const activePct = Math.round((stats.actifs / stats.total) * 100);
+      setBannerSub($('#banner-pokedex-active-sub'), `${activePct} % du Pokédex`);
+    }
+    if (stats.actifs > 0) {
+      const megaPct = Math.round((stats.megaCount / stats.actifs) * 100);
+      setBannerSub($('#banner-mega-sub'), `${megaPct} % des actifs`);
+    }
+    const inactive = stats.total - stats.actifs;
+    if (inactive > 0) {
+      setBannerSub($('#banner-pokedex-total-sub'), `${inactive} inactif${inactive > 1 ? 's' : ''}`);
+    }
+
+    const entries = Object.entries(stats.typeCounts).sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1];
+      const labelA = TypeDisplay?.displayLabel?.(a[0]) ?? a[0];
+      const labelB = TypeDisplay?.displayLabel?.(b[0]) ?? b[0];
+      return labelA.localeCompare(labelB, 'fr');
+    });
+
+    if (!entries.length) {
+      typesEl.innerHTML = '<span class="phase-banner__types-empty">Aucun Pokémon actif</span>';
+      return;
+    }
+
+    typesEl.innerHTML = entries
+      .map(([type, count]) => {
+        const badge = TypeDisplay?.renderBadge?.(type, { variant: 'badge' }) ?? '';
+        return `<div class="phase-banner__type-item">${badge}<span class="phase-banner__type-count">${count}</span></div>`;
+      })
+      .join('');
+  }
+
+  function setBannerTurn(turnEl, turnMaxEl, turnWrapEl, turn, maxTurn) {
+    if (turnWrapEl) turnWrapEl.hidden = turn == null;
+    if (turnEl) turnEl.textContent = turn == null ? '—' : String(turn);
+    if (turnMaxEl) {
+      turnMaxEl.textContent = turn == null || maxTurn == null ? '' : ` / ${maxTurn}`;
+      turnMaxEl.className = 'phase-banner__turn-max';
+    }
+  }
+
+  function renderBannerSession() {
+    const phaseEl = $('#banner-session-phase');
+    const turnEl = $('#banner-session-turn');
+    const turnMaxEl = $('#banner-session-turn-max');
+    const turnWrapEl = $('#banner-session-turn-wrap');
+    const activeEl = $('#banner-session-active');
+    const timerEl = $('#banner-session-timer');
+    const nextEl = $('#banner-session-next');
+    if (!phaseEl || !turnEl || !activeEl || !timerEl || !nextEl) return;
+
+    const resetTimerClasses = () => {
+      timerEl.classList.remove('phase-banner__timer--warning', 'phase-banner__timer--expired');
+    };
+
+    const clearSession = (badgeLabel, badgeModifier) => {
+      setPhaseBadge(phaseEl, badgeLabel, badgeModifier);
+      setBannerTurn(turnEl, turnMaxEl, turnWrapEl, null, null);
+      activeEl.textContent = '—';
+      timerEl.textContent = '—';
+      resetTimerClasses();
+      nextEl.textContent = '—';
+    };
+
+    if (state.phase === PHASE.SETUP) {
+      clearSession('Tableau de bord', 'setup');
+      return;
+    }
+
+    if (state.phase === PHASE.COMPLETE) {
+      clearSession('Terminé', 'complete');
+      return;
+    }
+
+    if (!isPlayingPhase()) {
+      clearSession('—', null);
+      return;
+    }
+
+    const active = DraftState.getActivePlayerIndex(state);
+    const nextIdx = DraftState.getNextPlayerIndex(state);
+
+    if (state.phase === PHASE.BAN) {
+      setPhaseBadge(phaseEl, 'Ban', 'ban');
+      setBannerTurn(
+        turnEl,
+        turnMaxEl,
+        turnWrapEl,
+        DraftState.getBanRound(state.totalBansDone),
+        DraftState.BANS_PER_PLAYER
+      );
+    } else {
+      setPhaseBadge(phaseEl, 'Draft', 'draft');
+      setBannerTurn(
+        turnEl,
+        turnMaxEl,
+        turnWrapEl,
+        DraftState.getDraftRound(state.totalPicksDone),
+        DraftState.PICKS_PER_PLAYER
+      );
+    }
+
+    activeEl.textContent =
+      active >= 0 && state.players[active] ? state.players[active].name : '—';
+    nextEl.textContent =
+      nextIdx >= 0 && state.players[nextIdx] ? state.players[nextIdx].name : '—';
+
+    const timerDisplay = StreamView?.getTimerDisplay?.() ?? '—';
+    timerEl.textContent = timerDisplay;
+    resetTimerClasses();
+    if (timerDisplay !== '—' && StreamView?.getTimerRemainingSec) {
+      const remaining = StreamView.getTimerRemainingSec();
+      if (remaining > 0 && remaining <= 10) {
+        timerEl.classList.add('phase-banner__timer--warning');
+      } else if (remaining <= 0) {
+        timerEl.classList.add('phase-banner__timer--expired');
+      }
+    }
   }
 
   function updateControls() {
@@ -369,9 +533,9 @@
       btnStartStream.disabled = showStart ? !canStartDraftSilent() : true;
       btnStartStream.classList.toggle('hidden', !showStart);
     }
-    $('#draft-workspace')?.classList.toggle('hidden', setup || complete);
     $('#draft-main--classic')?.classList.toggle('hidden', isStreamMode());
-    $('#complete-panel').classList.toggle('hidden', !complete);
+    $('#complete-panel').classList.toggle('hidden', !complete || isStreamMode());
+    renderDashboardRecap();
 
     if (searchInputEnabled(playing)) {
       $('#pokemon-search').disabled = false;
@@ -420,28 +584,6 @@
     return viewModeSwitchEl;
   }
 
-  function getThemeSwitchEl() {
-    if (!themeSwitchEl) {
-      themeSwitchEl = document.querySelector('.theme-switch');
-    }
-    return themeSwitchEl;
-  }
-
-  function shouldShowThemeSwitch() {
-    return !isStreamMode() && !isPokedexTabActive();
-  }
-
-  function updateThemeSwitchVisibility() {
-    const anchor = document.getElementById('theme-switch-anchor-header');
-    const sw = getThemeSwitchEl();
-    if (!anchor) return;
-    const show = shouldShowThemeSwitch();
-    anchor.hidden = !show;
-    if (show && sw && sw.parentElement !== anchor) {
-      anchor.appendChild(sw);
-    }
-  }
-
   function placeViewModeSwitch() {
     const sw = getViewModeSwitchEl();
     if (!sw) return;
@@ -471,7 +613,6 @@
     }
 
     placeMessageBar();
-    updateThemeSwitchVisibility();
     placeViewModeSwitch();
     if (stream) showMessage('');
 
@@ -511,6 +652,61 @@
     setTheme(DraftStorage.loadTheme());
   }
 
+  function syncTimerConfigFields() {
+    const total = StreamView?.getTurnDurationSec?.() ?? DraftStorage.loadTurnTimerDuration();
+    const minInput = $('#config-timer-min');
+    const secInput = $('#config-timer-sec');
+    if (minInput) minInput.value = String(Math.floor(total / 60));
+    if (secInput) secInput.value = String(total % 60);
+  }
+
+  function parseTimerConfigFields() {
+    const min = Number($('#config-timer-min')?.value ?? 0);
+    const sec = Number($('#config-timer-sec')?.value ?? 0);
+    const minSafe = Number.isFinite(min) ? Math.max(0, Math.min(10, Math.floor(min))) : 0;
+    const secSafe = Number.isFinite(sec) ? Math.max(0, Math.min(59, Math.floor(sec))) : 0;
+    return minSafe * 60 + secSafe;
+  }
+
+  function applyTimerConfigFromFields() {
+    let total = parseTimerConfigFields();
+    if (total < DraftStorage.TIMER_DURATION_MIN) {
+      total = DraftStorage.TIMER_DURATION_MIN;
+      showMessage(
+        `Durée minimale : ${DraftStorage.TIMER_DURATION_MIN} secondes.`,
+        'info'
+      );
+    }
+    const clamped = DraftStorage.clampTurnTimerDuration(total);
+    StreamView?.setTurnDurationSec?.(clamped);
+    syncTimerConfigFields();
+  }
+
+  function initTimerConfig() {
+    syncTimerConfigFields();
+    const onTimerFieldChange = () => applyTimerConfigFromFields();
+    $('#config-timer-min')?.addEventListener('change', onTimerFieldChange);
+    $('#config-timer-sec')?.addEventListener('change', onTimerFieldChange);
+  }
+
+  function renderDashboardRecap() {
+    const el = $('#dashboard-recap');
+    if (!el || !window.DraftRecap) return;
+    const complete = state.phase === PHASE.COMPLETE;
+    const show = complete && !isStreamMode();
+    el.classList.toggle('hidden', !show);
+    if (!show) {
+      lastDashboardRecapKey = '';
+      return;
+    }
+    const recap = window.DraftRecap.computeRecap(state, poolData);
+    const recapKey = JSON.stringify(recap);
+    if (recapKey !== lastDashboardRecapKey) {
+      window.DraftRecap.renderStream(el, recap);
+      lastDashboardRecapKey = recapKey;
+    }
+  }
+
   function renderAll() {
     if (editingPlayerName === null) {
       renderPlayersGrid();
@@ -523,7 +719,7 @@
       renderPokedex();
     }
     if (StreamView) StreamView.render(state, poolData);
-    updateThemeSwitchVisibility();
+    renderDashboardRecap();
     placeViewModeSwitch();
   }
 
@@ -773,8 +969,8 @@
 
   function newGame() {
     showModal(
-      'Nouvelle partie',
-      'Réinitialiser joueurs, bans et picks ?',
+      'Nouveau draft',
+      'Le draft en cours sera supprimé (joueurs remis par défaut, bans et picks effacés). Continuer ?',
       () => {
         state = DraftState.resetDraft(false);
         persist();
@@ -958,7 +1154,6 @@
     $('#btn-start-draft-stream')?.addEventListener('click', startDraft);
     $('#btn-ban')?.addEventListener('click', banSelection);
     $('#btn-pick')?.addEventListener('click', assignSelection);
-    $('#btn-undo').addEventListener('click', undo);
     $('#btn-undo-dock')?.addEventListener('click', undo);
     $('#btn-reset-draft').addEventListener('click', resetDraft);
     $('#btn-new-game').addEventListener('click', newGame);
@@ -1014,8 +1209,8 @@
     initTabs();
     initEvents();
     initTheme();
+    initTimerConfig();
     initViewMode();
-    updateThemeSwitchVisibility();
     placeMessageBar();
     renderAll();
 

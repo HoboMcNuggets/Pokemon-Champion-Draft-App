@@ -76,6 +76,50 @@
 
 
 
+  function countActivePoolStats(pool) {
+
+    const enabled = pool.filter((p) => p.enabled);
+
+    let megaCount = 0;
+
+    const typeCounts = {};
+
+
+
+    for (const p of enabled) {
+
+      if (p.isMega) megaCount += 1;
+
+      [p.type1, p.type2]
+
+        .filter((t) => t && String(t).trim())
+
+        .forEach((type) => {
+
+          typeCounts[type] = (typeCounts[type] || 0) + 1;
+
+        });
+
+    }
+
+
+
+    return {
+
+      total: pool.length,
+
+      actifs: enabled.length,
+
+      megaCount,
+
+      typeCounts,
+
+    };
+
+  }
+
+
+
   function searchPokemon(pool, query) {
 
     const q = (query || '').trim().toLowerCase();
@@ -168,6 +212,8 @@
 
     countPoolStats,
 
+    countActivePoolStats,
+
     searchPokemon,
 
     formatAbilityName,
@@ -226,11 +272,45 @@
     return `<img${cls} src="${escapeAttr(src)}" data-sprite-src="${escapeAttr(src)}"${alt}${loading}${draggable} onerror="handleSpriteError(this)">`;
   }
 
+  function isMegaPokemon(ref, poolData) {
+    if (!ref) return false;
+    if (ref.isMega === true) return true;
+    if (ref.isMega === false) return false;
+    const url = String(ref.spriteUrl || '').toLowerCase();
+    if (/-mega|mega-|megax|megay|primal|gmax/.test(url)) return true;
+    const id = ref.id || ref.pokemonId;
+    if (poolData && id && global.DraftState?.findPokemon) {
+      const pokemon = global.DraftState.findPokemon(poolData, id);
+      return !!pokemon?.isMega;
+    }
+    return false;
+  }
+
+  /** Sprite + libellé MÉGA sous l'image (sans zoom). */
+  function renderSlotContent(spriteUrl, options) {
+    const opts = options || {};
+    const img = tag(spriteUrl, {
+      className: opts.className,
+      alt: opts.alt,
+      draggable: opts.draggable,
+    });
+    const mega = isMegaPokemon(
+      { id: opts.id, pokemonId: opts.pokemonId, spriteUrl, isMega: opts.isMega },
+      opts.poolData
+    );
+    if (!mega) return img;
+    const wrapClass = opts.wrapClass || 'sprite-slot-wrap';
+    const labelClass = opts.megaLabelClass || 'sprite-mega-label';
+    return `<div class="${wrapClass}">${img}<span class="${labelClass}">MEGA</span></div>`;
+  }
+
   global.handleSpriteError = handleSpriteError;
   global.SpriteImg = {
     PLACEHOLDER,
     escapeAttr,
     tag,
+    isMegaPokemon,
+    renderSlotContent,
     handleError: handleSpriteError,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

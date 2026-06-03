@@ -1,0 +1,347 @@
+/* Récapitulatif fin de draft — colonne centrale stream */
+
+.stream-center--recap .stream-recap {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0.25rem 0.35rem 0.15rem;
+  overflow: hidden;
+}
+
+.stream-center--recap .stream-banned {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.stream-recap {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 2px solid var(--stream-gold, #ffd700);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--stream-panel, #121828) 88%, transparent);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.12);
+}
+
+.stream-recap.hidden {
+  display: none !important;
+}
+
+/* Récap — panneau « Draft terminé » (tableau de bord) */
+
+.draft-recap-dashboard {
+  margin: 1.25rem auto;
+  max-width: 56rem;
+  text-align: left;
+}
+
+.draft-recap-dashboard .stream-recap {
+  border-color: var(--success);
+  box-shadow: 0 0 16px rgba(62, 207, 142, 0.12);
+}
+
+.draft-recap-dashboard .stream-recap__inner {
+  height: auto;
+  overflow: visible;
+  padding: 0.75rem 1rem 1rem;
+}
+
+.draft-recap-dashboard .stream-recap__columns {
+  min-height: 12rem;
+}
+
+.stream-recap__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 0;
+  flex: 1;
+  height: 100%;
+  padding: 0.35rem 0.5rem 0.4rem;
+  overflow: hidden;
+}
+
+.stream-recap__header {
+  text-align: center;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.stream-recap__title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--stream-gold, #ffd700);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.stream-recap__duration {
+  margin: 0.1rem 0 0;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.stream-recap__duration strong {
+  color: var(--stream-cyan, #00f2ff);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.stream-recap__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 0.55rem;
+  min-height: 0;
+  flex: 1;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.stream-recap__section {
+  min-width: 0;
+  min-height: 0;
+}
+
+.stream-recap__section--types {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  height: 100%;
+  justify-content: flex-start;
+  align-self: start;
+}
+
+.stream-recap__section--teams {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-height: 0;
+  justify-content: flex-start;
+  align-self: start;
+}
+
+.stream-recap__section--teams .stream-recap__table-wrap {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.stream-recap__section-title {
+  margin: 0 0 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.stream-recap__pie-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.stream-recap__pie-stage {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  padding-top: 0;
+}
+
+.stream-recap__pie {
+  width: min(100%, 200px);
+  height: auto;
+  max-height: min(200px, 32vh);
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+  overflow: visible;
+}
+
+.stream-recap__pie-slice {
+  cursor: pointer;
+  transition: opacity 0.15s ease, filter 0.15s ease;
+  outline: none;
+}
+
+.stream-recap__pie-slice:hover,
+.stream-recap__pie-slice:focus-visible,
+.stream-recap__pie-slice--active {
+  opacity: 1;
+  filter: brightness(1.15);
+}
+
+.stream-recap__pie:has(.stream-recap__pie-slice--active) .stream-recap__pie-slice:not(.stream-recap__pie-slice--active) {
+  opacity: 0.45;
+}
+
+.stream-recap__pie-tooltip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #fff;
+  background: rgba(8, 10, 16, 0.94);
+  border: 1px solid var(--stream-cyan, #00f2ff);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  transform: translate(-50%, calc(-100% - 10px));
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease, visibility 0.12s ease;
+}
+
+.stream-recap__pie-tooltip--visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.stream-recap__legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.1rem 0.3rem;
+  width: 100%;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.stream-recap__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.64rem;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.stream-recap__legend-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.stream-recap__legend-item .stream-type-orb {
+  gap: 0.2rem;
+}
+
+.stream-recap__legend-item .stream-type-orb__icon {
+  width: 14px;
+  height: 14px;
+}
+
+.stream-recap__legend-item .stream-type-orb__label {
+  font-size: 0.62rem;
+}
+
+.stream-recap__legend-meta {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  font-size: 0.6rem;
+}
+
+.stream-recap__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  table-layout: fixed;
+}
+
+.stream-recap__table th,
+.stream-recap__table td {
+  padding: 0.28rem 0.38rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  vertical-align: middle;
+}
+
+.stream-recap__table th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 700;
+}
+
+.stream-recap__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.stream-recap__player {
+  font-weight: 700;
+  width: 38%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stream-recap__bst {
+  width: 22%;
+  font-weight: 800;
+  color: var(--stream-cyan, #00f2ff);
+  white-space: nowrap;
+}
+
+.stream-recap__weakness {
+  width: 40%;
+  vertical-align: middle;
+}
+
+.stream-recap__weakness-type {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.stream-recap__weakness-type .stream-type-orb__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.stream-recap__weakness-type .stream-type-orb__label {
+  font-size: 0.68rem;
+}
+
+.stream-recap__empty {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+}
+
+@media (max-height: 720px) {
+  .stream-recap__pie {
+    max-height: min(160px, 28vh);
+  }
+
+  .stream-recap__table {
+    font-size: 0.72rem;
+  }
+
+  .stream-recap__table th,
+  .stream-recap__table td {
+    padding: 0.22rem 0.3rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .stream-recap__columns {
+    grid-template-columns: 1fr;
+  }
+}

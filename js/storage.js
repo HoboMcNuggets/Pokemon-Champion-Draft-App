@@ -6,6 +6,10 @@
   const POOL_KEY = 'pokemonDraft.pool';
   const VIEW_MODE_KEY = 'pokemonDraft.viewMode';
   const THEME_KEY = 'pokemonDraft.theme';
+  const TIMER_DURATION_KEY = 'pokemonDraft.timerDurationSec';
+  const TIMER_DURATION_MIN = 10;
+  const TIMER_DURATION_MAX = 600;
+  const TIMER_DURATION_DEFAULT = 60;
   const VALID_THEMES = [
     'default',
     'normal',
@@ -124,6 +128,31 @@
     }
   }
 
+  function clampTurnTimerDuration(sec) {
+    const n = Number(sec);
+    if (!Number.isFinite(n)) return TIMER_DURATION_DEFAULT;
+    return Math.min(TIMER_DURATION_MAX, Math.max(TIMER_DURATION_MIN, Math.round(n)));
+  }
+
+  function saveTurnTimerDuration(sec) {
+    try {
+      localStorage.setItem(TIMER_DURATION_KEY, String(clampTurnTimerDuration(sec)));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function loadTurnTimerDuration() {
+    try {
+      const v = localStorage.getItem(TIMER_DURATION_KEY);
+      if (v == null) return TIMER_DURATION_DEFAULT;
+      return clampTurnTimerDuration(Number(v));
+    } catch (e) {
+      return TIMER_DURATION_DEFAULT;
+    }
+  }
+
   global.DraftStorage = {
     saveDraft,
     loadDraft,
@@ -135,5 +164,11 @@
     saveTheme,
     loadTheme,
     VALID_THEMES,
+    saveTurnTimerDuration,
+    loadTurnTimerDuration,
+    clampTurnTimerDuration,
+    TIMER_DURATION_MIN,
+    TIMER_DURATION_MAX,
+    TIMER_DURATION_DEFAULT,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
