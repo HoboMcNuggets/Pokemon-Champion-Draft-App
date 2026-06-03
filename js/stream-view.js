@@ -9,6 +9,9 @@
   const PLACEHOLDER = 'assets/sprites/placeholder.svg';
   const POKEBALL = 'assets/pokemon-ball.png';
 
+  /** Durée du timer par tour en secondes (modifier ici si besoin). */
+  const STREAM_TURN_DURATION_SEC = 60;
+
   const STAT_MAX = 255;
 
   const STAT_ROWS = [
@@ -130,7 +133,7 @@
 
       return `
 
-        <div class="stream-stat-row">
+        <div class="stream-stat-row stream-stat-row--${bar}">
 
           <span class="stream-stat-label">${label}</span>
 
@@ -284,6 +287,82 @@
 
   }
 
+  let timerInterval = null;
+  let timerRemainingSec = STREAM_TURN_DURATION_SEC;
+  let lastTurnKey = null;
+
+  function getTurnKey(state) {
+    const PHASE = global.DraftState.PHASE;
+    if (state.phase === PHASE.BAN) return `ban-${state.totalBansDone}`;
+    if (state.phase === PHASE.DRAFT) return `draft-${state.totalPicksDone}`;
+    return null;
+  }
+
+  function formatTimer(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  function stopTurnTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
+
+  function updateTimerDisplay(el, remaining) {
+    el.textContent = formatTimer(remaining);
+    el.classList.toggle('stream-timer--warning', remaining > 0 && remaining <= 10);
+    el.classList.toggle('stream-timer--expired', remaining <= 0);
+  }
+
+  function startTurnTimerCountdown() {
+    const el = document.getElementById('stream-timer');
+    if (!el || el.classList.contains('hidden')) return;
+
+    stopTurnTimer();
+    timerRemainingSec = STREAM_TURN_DURATION_SEC;
+    updateTimerDisplay(el, timerRemainingSec);
+    timerInterval = setInterval(() => {
+      if (timerRemainingSec > 0) timerRemainingSec -= 1;
+      updateTimerDisplay(el, timerRemainingSec);
+    }, 1000);
+  }
+
+  function renderTurnTimer(state) {
+    const el = document.getElementById('stream-timer');
+    if (!el) return;
+
+    const streamMode =
+      typeof document !== 'undefined' &&
+      document.body.classList.contains('stream-mode');
+    const turnKey = streamMode ? getTurnKey(state) : null;
+
+    if (!turnKey) {
+      stopTurnTimer();
+      lastTurnKey = null;
+      el.classList.add('hidden');
+      el.setAttribute('aria-hidden', 'true');
+      return;
+    }
+
+    el.classList.remove('hidden');
+    el.setAttribute('aria-hidden', 'false');
+
+    if (turnKey !== lastTurnKey) {
+      lastTurnKey = turnKey;
+    }
+
+    if (!timerInterval) {
+      startTurnTimerCountdown();
+    }
+  }
+
+  function onTurnActionCompleted() {
+    startTurnTimerCountdown();
+  }
+
 
 
   function render(state, poolData) {
@@ -346,6 +425,8 @@
 
     renderTopBar(state);
 
+    renderTurnTimer(state);
+
   }
 
 
@@ -353,6 +434,8 @@
   global.StreamView = {
 
     render,
+
+    onTurnActionCompleted,
 
   };
 

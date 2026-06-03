@@ -46,6 +46,49 @@
   padding: 0.4rem 0.5rem 0.3rem;
 }
 
+.stream-layout__top-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0 5.5rem;
+}
+
+.stream-timer {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 3.5rem;
+  padding: 0.2rem 0.65rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--stream-gold);
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+  border: 2px solid rgba(255, 215, 0, 0.45);
+  border-radius: 8px;
+  background: rgba(12, 16, 28, 0.85);
+}
+
+.stream-timer.hidden {
+  display: none;
+}
+
+.stream-timer--warning {
+  color: #ff8c42;
+  border-color: rgba(255, 140, 66, 0.65);
+  text-shadow: 0 0 12px rgba(255, 140, 66, 0.45);
+}
+
+.stream-timer--expired {
+  color: #ff4d4d;
+  border-color: rgba(255, 77, 77, 0.75);
+  text-shadow: 0 0 12px rgba(255, 77, 77, 0.5);
+}
+
 .stream-now {
   font-size: 1.35rem;
   font-weight: 700;
@@ -566,10 +609,19 @@
 
 .stream-stat-bar {
   height: 10px;
-  background: #1a2035;
+  background: rgba(0, 0, 0, 0.35);
   border-radius: 5px;
   overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.45);
 }
+
+.stream-stat-row--hp .stream-stat-bar { background: rgba(120, 200, 80, 0.28); }
+.stream-stat-row--atk .stream-stat-bar { background: rgba(248, 208, 48, 0.28); }
+.stream-stat-row--def .stream-stat-bar { background: rgba(240, 128, 48, 0.28); }
+.stream-stat-row--spa .stream-stat-bar { background: rgba(72, 176, 240, 0.28); }
+.stream-stat-row--spd .stream-stat-bar { background: rgba(72, 96, 224, 0.28); }
+.stream-stat-row--spe .stream-stat-bar { background: rgba(240, 72, 168, 0.28); }
+.stream-stat-row--total .stream-stat-bar { background: rgba(88, 168, 56, 0.35); }
 
 .stream-stat-bar__fill {
   height: 100%;
@@ -577,13 +629,14 @@
   transition: width 0.3s ease;
 }
 
-.stream-stat-bar__fill--hp { background: #e74c3c; }
-.stream-stat-bar__fill--atk { background: #f39c12; }
-.stream-stat-bar__fill--def { background: #f1c40f; }
-.stream-stat-bar__fill--spa { background: #9b59b6; }
-.stream-stat-bar__fill--spd { background: #3498db; }
-.stream-stat-bar__fill--spe { background: #2ecc71; }
-.stream-stat-bar__fill--total { background: var(--stream-gold); }
+/* Couleurs Bulbapedia (Base stats) */
+.stream-stat-bar__fill--hp { background: #78c850; }
+.stream-stat-bar__fill--atk { background: #f8d030; }
+.stream-stat-bar__fill--def { background: #f08030; }
+.stream-stat-bar__fill--spa { background: #48b0f0; }
+.stream-stat-bar__fill--spd { background: #4060e0; }
+.stream-stat-bar__fill--spe { background: #f048a8; }
+.stream-stat-bar__fill--total { background: #58a838; }
 
 .stream-spotlight__frame.stream-spotlight--empty {
   border-color: rgba(255, 215, 0, 0.3);

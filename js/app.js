@@ -458,6 +458,9 @@
     showMessage(msg, 'success');
     persist();
     renderAll();
+    if (isStreamMode() && StreamView?.onTurnActionCompleted) {
+      StreamView.onTurnActionCompleted();
+    }
   }
 
   function assignSelection() {
@@ -477,6 +480,9 @@
     showMessage(`Pick enregistré : ${pokemon.name} → ${playerName}`, 'success');
     persist();
     renderAll();
+    if (isStreamMode() && StreamView?.onTurnActionCompleted) {
+      StreamView.onTurnActionCompleted();
+    }
   }
 
   function startDraft() {
@@ -496,6 +502,9 @@
     persist();
     showMessage('Dernière action annulée.', 'info');
     renderAll();
+    if (isStreamMode() && StreamView?.onTurnActionCompleted) {
+      StreamView.onTurnActionCompleted();
+    }
   }
 
   function getSlotPickerCandidates(playerIndex, slotIndex) {
