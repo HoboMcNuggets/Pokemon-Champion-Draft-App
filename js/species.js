@@ -178,3 +178,60 @@
 
 })(typeof window !== 'undefined' ? window : globalThis);
 
+/**
+ * Chargement des sprites animés — retry en cas d'échec réseau transitoire.
+ */
+(function (global) {
+  if (global.SpriteImg) return;
+
+  const PLACEHOLDER = 'assets/sprites/placeholder.svg';
+  const MAX_RETRIES = 2;
+
+  function escapeAttr(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function handleSpriteError(img) {
+    const original = img.dataset.spriteSrc;
+    if (!original || original === PLACEHOLDER) return;
+
+    const retries = Number(img.dataset.spriteRetries || 0);
+    if (retries >= MAX_RETRIES) {
+      img.onerror = null;
+      img.src = PLACEHOLDER;
+      return;
+    }
+
+    img.dataset.spriteRetries = String(retries + 1);
+    const delay = 400 * (retries + 1);
+    setTimeout(() => {
+      if (!img.isConnected) return;
+      const sep = original.includes('?') ? '&' : '?';
+      img.src = `${original}${sep}_r=${retries + 1}`;
+    }, delay);
+  }
+
+  function tag(spriteUrl, options) {
+    const opts = options || {};
+    const src = spriteUrl || PLACEHOLDER;
+    const cls = opts.className ? ` class="${escapeAttr(opts.className)}"` : '';
+    const alt = opts.alt != null ? ` alt="${escapeAttr(opts.alt)}"` : ' alt=""';
+    const loading = opts.loading ? ` loading="${escapeAttr(opts.loading)}"` : '';
+    const draggable = opts.draggable === false ? ' draggable="false"' : '';
+    return `<img${cls} src="${escapeAttr(src)}" data-sprite-src="${escapeAttr(src)}"${alt}${loading}${draggable} onerror="handleSpriteError(this)">`;
+  }
+
+  global.handleSpriteError = handleSpriteError;
+  global.SpriteImg = {
+    PLACEHOLDER,
+    escapeAttr,
+    tag,
+    handleError: handleSpriteError,
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+

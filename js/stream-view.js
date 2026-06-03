@@ -5,8 +5,10 @@
  */
 
 (function (global) {
-
-  const { SpriteImg } = global;
+  const SpriteImg = global.SpriteImg;
+  if (!SpriteImg) {
+    throw new Error('SpriteImg manquant : vérifiez que js/species.js est chargé avant stream-view.js.');
+  }
   const PLACEHOLDER = SpriteImg.PLACEHOLDER;
   const POKEBALL = 'assets/pokemon-ball.png';
 
