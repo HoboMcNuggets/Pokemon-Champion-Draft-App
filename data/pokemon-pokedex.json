@@ -28505,7 +28505,7 @@
       "spDef": 62,
       "speed": 100,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/palafin.gif",
-      "enabled": true,
+      "enabled": false,
       "speciesKey": "#0964",
       "isMega": false,
       "abilities": [
