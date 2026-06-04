@@ -142,14 +142,13 @@
 
 
 
-  function formatAbilityName(ability) {
-
+  function formatAbilityName(ability, options) {
     if (!ability || !ability.name) return '';
-
-    if (ability.isHidden) return `${ability.name} (Hidden)`;
-
+    const opts = options || {};
+    if (opts.markHidden !== false && ability.isHidden) {
+      return `${ability.name} (Hidden)`;
+    }
     return ability.name;
-
   }
 
 
@@ -163,6 +162,7 @@
     const itemClass = opts.itemClass || 'ability-list__item';
 
     const hiddenClass = opts.hiddenClass || 'ability-list__item--hidden';
+    const distinguishHidden = opts.distinguishHidden !== false;
 
     const abilities = pokemon?.abilities;
 
@@ -172,9 +172,14 @@
 
       .map((ability) => {
 
-        const cls = ability.isHidden ? `${itemClass} ${hiddenClass}` : itemClass;
+        const cls =
+          distinguishHidden && ability.isHidden
+            ? `${itemClass} ${hiddenClass}`
+            : itemClass;
 
-        const label = formatAbilityName(ability);
+        const label = formatAbilityName(ability, {
+          markHidden: distinguishHidden,
+        });
 
         return `<li class="${cls}">${escapeHtml(label)}</li>`;
 

@@ -171,7 +171,7 @@
     const listHtml = global.PokemonSpecies.renderAbilitiesList(pokemon, {
       listClass: 'stream-ability-list',
       itemClass: 'stream-ability-list__item',
-      hiddenClass: 'stream-ability-list__item--hidden',
+      distinguishHidden: false,
     });
     if (!listHtml) return '';
     return `

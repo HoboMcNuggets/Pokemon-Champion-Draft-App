@@ -676,11 +676,6 @@
   color: var(--stream-cyan);
 }
 
-.stream-ability-list__item--hidden {
-  color: #a8b4cc;
-  font-style: italic;
-}
-
 .stream-stat-row {
   display: grid;
   grid-template-columns: 76px 42px 1fr;
