@@ -43,6 +43,8 @@
   /** Référence persistante — le panneau J8 est re-rendu à chaque tick stream. */
   let viewModeSwitchEl = null;
   let lastDashboardRecapKey = '';
+  let lastSearchListKey = '';
+  let undoRenderRaf = 0;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
@@ -567,29 +569,42 @@
 
     const container = $('#search-results');
     if (!poolData) {
+      lastSearchListKey = '';
       container.innerHTML = '<p>Chargement du Pokédex…</p>';
       updateDockActions();
       return;
     }
 
     if (state.phase === PHASE.SETUP || state.phase === PHASE.COMPLETE) {
+      lastSearchListKey = '';
       container.innerHTML = '<p>Draft non démarré ou terminé.</p>';
       updateDockActions();
       return;
     }
 
     if (list.length === 0) {
+      lastSearchListKey = '';
       container.innerHTML = '<p>Aucun Pokémon disponible.</p>';
       updateDockActions();
       return;
     }
+
+    const listKey = `${state.phase}|${q}|${list.map((p) => p.id).join(',')}`;
+    if (listKey === lastSearchListKey) {
+      container.querySelectorAll('.search-result-item').forEach((el) => {
+        el.classList.toggle('selected', el.dataset.id === state.selectedPokemonId);
+      });
+      updateDockActions();
+      return;
+    }
+    lastSearchListKey = listKey;
 
     container.innerHTML = list
       .map((p) => {
         const sel = state.selectedPokemonId === p.id;
         return `
         <div class="search-result-item ${sel ? 'selected' : ''}" data-id="${escapeAttr(p.id)}" role="button" tabindex="0">
-          ${SpriteImg.tagForPokemon(p)}
+          ${SpriteImg.tagForPokemon(p, { loading: 'lazy', decoding: 'async', pokemonId: p.id, id: p.id })}
           <div class="search-result-item__info">
             <div class="search-result-item__name">${escapeHtml(p.name)}</div>
             <div class="search-result-item__meta">${escapeHtml(p.pokedexId)} · BST ${PokemonSpecies.getBaseTotal(p)}</div>
@@ -1086,13 +1101,19 @@
     renderAll();
   }
 
-  function undo() {
-    state = DraftState.undo(state);
-    persist();
+  function flushUndoRender() {
+    undoRenderRaf = 0;
     renderAll();
     if (isStreamMode() && StreamView?.onTurnActionCompleted) {
       StreamView.onTurnActionCompleted();
     }
+  }
+
+  function undo() {
+    state = DraftState.undo(state);
+    persist();
+    if (undoRenderRaf) cancelAnimationFrame(undoRenderRaf);
+    undoRenderRaf = requestAnimationFrame(flushUndoRender);
   }
 
   function getSlotPickerCandidates(playerIndex, slotIndex) {

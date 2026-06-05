@@ -77,25 +77,84 @@
     return global.DraftState.getNextPlayerIndex(state);
   }
 
+  const STREAM_SLOT_SPRITE_OPTS = {
+    className: 'stream-slot__sprite',
+    poolData: null,
+    wrapClass: 'sprite-slot-wrap sprite-slot-wrap--stream',
+    megaLabelClass: 'sprite-mega-label sprite-mega-label--stream',
+    loading: 'eager',
+    decoding: 'async',
+    pokemonId: null,
+  };
+
+  function lookupPickPokemon(pick, poolData) {
+    if (!pick) return null;
+    if (poolData && global.DraftState?.findPokemon) {
+      return global.DraftState.findPokemon(poolData, pick.id) || pick;
+    }
+    return pick;
+  }
+
+  function streamSlotSpriteOpts(pick, poolData) {
+    return {
+      ...STREAM_SLOT_SPRITE_OPTS,
+      alt: pick.name,
+      poolData,
+      pokemonId: pick.id,
+      id: pick.id,
+    };
+  }
+
+  function renderFilledSlotHtml(pick, poolData, selectedPokemonId) {
+    const pokemon = lookupPickPokemon(pick, poolData);
+    const isSelected = selectedPokemonId === pick.id;
+    const spriteHtml = SpriteImg.renderSlotForPokemon(pokemon, streamSlotSpriteOpts(pick, poolData));
+    return `<div class="stream-slot stream-slot--filled stream-spotlight-selectable${isSelected ? ' stream-spotlight-selectable--selected' : ''}" data-pokemon-id="${escapeAttr(pick.id)}" data-pick-id="${escapeAttr(pick.id)}" role="button" tabindex="0" title="${escapeAttr(pick.name)}" aria-label="${escapeAttr(pick.name)}" aria-pressed="${isSelected ? 'true' : 'false'}">${spriteHtml}</div>`;
+  }
+
+  function renderEmptySlotHtml() {
+    return `<div class="stream-slot stream-slot--empty" data-pick-id=""><img class="stream-slot__ball" src="${POKEBALL}" alt="" loading="eager" decoding="async"></div>`;
+  }
+
+  function syncFilledSlotEl(slotEl, pick, poolData, selectedPokemonId) {
+    const isSelected = selectedPokemonId === pick.id;
+    slotEl.classList.add('stream-slot--filled', 'stream-spotlight-selectable');
+    slotEl.classList.remove('stream-slot--empty');
+    slotEl.dataset.pokemonId = pick.id;
+    slotEl.dataset.pickId = pick.id;
+    slotEl.setAttribute('role', 'button');
+    slotEl.setAttribute('tabindex', '0');
+    slotEl.title = pick.name;
+    slotEl.setAttribute('aria-label', pick.name);
+    slotEl.classList.toggle('stream-spotlight-selectable--selected', isSelected);
+    slotEl.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    const pokemon = lookupPickPokemon(pick, poolData);
+    SpriteImg.syncSlotContent(slotEl, pokemon, streamSlotSpriteOpts(pick, poolData));
+  }
+
+  function syncEmptySlotEl(slotEl) {
+    slotEl.classList.remove('stream-slot--filled', 'stream-spotlight-selectable', 'stream-spotlight-selectable--selected');
+    slotEl.classList.add('stream-slot--empty');
+    delete slotEl.dataset.pokemonId;
+    slotEl.dataset.pickId = '';
+    slotEl.removeAttribute('role');
+    slotEl.removeAttribute('tabindex');
+    slotEl.removeAttribute('title');
+    slotEl.removeAttribute('aria-label');
+    slotEl.removeAttribute('aria-pressed');
+    delete slotEl.dataset.spriteCacheKey;
+    if (!slotEl.querySelector('.stream-slot__ball')) {
+      slotEl.innerHTML = `<img class="stream-slot__ball" src="${POKEBALL}" alt="" loading="eager" decoding="async">`;
+    }
+  }
+
   function renderPlayerPanel(player, index, team, isActive, side, poolData, selectedPokemonId) {
     const { DraftState } = global;
     const pickCount = DraftState.PICKS_PER_PLAYER;
     const slots = Array.from({ length: pickCount }, (_, s) => {
       const pick = team[s];
-      if (pick) {
-        const isSelected = selectedPokemonId === pick.id;
-        const pokemon = poolData && global.DraftState?.findPokemon
-          ? global.DraftState.findPokemon(poolData, pick.id) || pick
-          : pick;
-        return `<div class="stream-slot stream-slot--filled stream-spotlight-selectable${isSelected ? ' stream-spotlight-selectable--selected' : ''}" data-pokemon-id="${escapeAttr(pick.id)}" role="button" tabindex="0" title="${escapeAttr(pick.name)}" aria-label="${escapeAttr(pick.name)}" aria-pressed="${isSelected ? 'true' : 'false'}">${SpriteImg.renderSlotForPokemon(pokemon, {
-          className: 'stream-slot__sprite',
-          alt: pick.name,
-          poolData,
-          wrapClass: 'sprite-slot-wrap sprite-slot-wrap--stream',
-          megaLabelClass: 'sprite-mega-label sprite-mega-label--stream',
-        })}</div>`;
-      }
-      return `<div class="stream-slot stream-slot--empty"><img class="stream-slot__ball" src="${POKEBALL}" alt=""></div>`;
+      if (pick) return renderFilledSlotHtml(pick, poolData, selectedPokemonId);
+      return renderEmptySlotHtml();
     }).join('');
 
     const camBlock =
@@ -195,16 +254,26 @@
       frameEl.className = 'stream-spotlight__frame stream-spotlight--empty';
       frameEl.innerHTML =
         '<span class="stream-spotlight__placeholder">Sélection en cours…</span>';
+      delete frameEl.dataset.spriteCacheKey;
       detailsEl.className = 'stream-spotlight-details stream-spotlight--empty';
       detailsEl.innerHTML = '';
       return;
     }
 
     frameEl.className = 'stream-spotlight__frame';
-    frameEl.innerHTML = SpriteImg.tagForPokemon(pokemon, {
-      className: 'stream-spotlight__sprite',
-      alt: pokemon.name,
-    });
+    const resolved = SpriteImg.resolveSprite(pokemon);
+    const spotlightKey = SpriteImg.spriteCacheKey(pokemon, resolved.url);
+    if (frameEl.dataset.spriteCacheKey !== spotlightKey) {
+      frameEl.dataset.spriteCacheKey = spotlightKey;
+      frameEl.innerHTML = SpriteImg.tagForPokemon(pokemon, {
+        className: 'stream-spotlight__sprite',
+        alt: pokemon.name,
+        loading: 'eager',
+        decoding: 'async',
+        pokemonId: pokemon.id,
+        id: pokemon.id,
+      });
+    }
 
     const t2 = pokemon.type2 ? renderTypeOrb(pokemon.type2) : '';
     detailsEl.className = 'stream-spotlight-details';
@@ -240,10 +309,15 @@
     return { round1, round2 };
   }
 
-  function renderBannedCell(ban, poolData, selectedPokemonId) {
+  function banCellKey(ban, playerIndex) {
+    return ban ? `${playerIndex}:${ban.pokemonId}` : `${playerIndex}:empty`;
+  }
+
+  function renderBannedCell(ban, poolData, selectedPokemonId, playerIndex) {
+    const cellKey = banCellKey(ban, playerIndex);
     if (!ban) {
       return `
-      <div class="stream-banned__cell stream-banned__cell--empty">
+      <div class="stream-banned__cell stream-banned__cell--empty" data-ban-key="${escapeAttr(cellKey)}">
         <div class="stream-banned__item stream-banned__item--empty" aria-hidden="true"></div>
       </div>`;
     }
@@ -259,9 +333,9 @@
       : '';
 
     return `
-      <div class="stream-banned__cell">
+      <div class="stream-banned__cell" data-ban-key="${escapeAttr(cellKey)}">
         <div class="stream-banned__item stream-spotlight-selectable${isSelected ? ' stream-spotlight-selectable--selected' : ''}" data-pokemon-id="${escapeAttr(ban.pokemonId)}" role="button" tabindex="0" title="${escapeAttr(pokemon.name)}" aria-label="${escapeAttr(pokemon.name)}" aria-pressed="${isSelected ? 'true' : 'false'}">
-          ${SpriteImg.tagForPokemon(pokemon)}
+          ${SpriteImg.tagForPokemon(pokemon, { loading: 'eager', decoding: 'async', pokemonId: pokemon.id, id: pokemon.id })}
         </div>
         ${megaLabel}
       </div>`;
@@ -270,8 +344,48 @@
   function renderBannedRow(bansByPlayer, poolData, selectedPokemonId) {
     const { DraftState } = global;
     return Array.from({ length: DraftState.PLAYER_COUNT }, (_, playerIndex) =>
-      renderBannedCell(bansByPlayer[playerIndex], poolData, selectedPokemonId)
+      renderBannedCell(bansByPlayer[playerIndex], poolData, selectedPokemonId, playerIndex)
     ).join('');
+  }
+
+  function syncBannedSelection(cellEl, ban, selectedPokemonId) {
+    if (!ban) return;
+    const item = cellEl.querySelector('.stream-banned__item');
+    if (!item) return;
+    const isSelected = selectedPokemonId === ban.pokemonId;
+    item.classList.toggle('stream-spotlight-selectable--selected', isSelected);
+    item.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+  }
+
+  function syncBannedRow(rowEl, bansByPlayer, poolData, selectedPokemonId) {
+    const { DraftState } = global;
+    const playerCount = DraftState.PLAYER_COUNT;
+    let cells = rowEl.querySelectorAll(':scope > .stream-banned__cell');
+
+    for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+      const ban = bansByPlayer[playerIndex];
+      const key = banCellKey(ban, playerIndex);
+      const cell = cells[playerIndex];
+
+      if (cell && cell.dataset.banKey === key) {
+        syncBannedSelection(cell, ban, selectedPokemonId);
+        continue;
+      }
+
+      const html = renderBannedCell(ban, poolData, selectedPokemonId, playerIndex);
+      if (cell) {
+        cell.insertAdjacentHTML('afterend', html);
+        cell.remove();
+      } else {
+        rowEl.insertAdjacentHTML('beforeend', html);
+      }
+    }
+
+    cells = rowEl.querySelectorAll(':scope > .stream-banned__cell');
+    while (cells.length > playerCount) {
+      cells[cells.length - 1].remove();
+      cells = rowEl.querySelectorAll(':scope > .stream-banned__cell');
+    }
   }
 
   function updateSpotlightSelectionHighlights(selectedPokemonId) {
@@ -288,6 +402,7 @@
 
     const bans = state.bans || [];
     const players = state.players || [];
+    const selectedPokemonId = state.selectedPokemonId || null;
 
     if (bans.length === 0) {
       list.innerHTML = '<span class="stream-banned__empty">—</span>';
@@ -301,12 +416,24 @@
       return `<div class="stream-banned__col-head" title="${escapeAttr(name)}">${escapeHtml(name)}</div>`;
     }).join('');
 
-    const selectedPokemonId = state.selectedPokemonId || null;
-    list.innerHTML = `
+    const row1 = list.querySelector('.stream-banned__row');
+    if (!row1) {
+      list.innerHTML = `
       <div class="stream-banned__headers">${headers}</div>
       <div class="stream-banned__row">${renderBannedRow(round1, poolData, selectedPokemonId)}</div>
       <div class="stream-banned__separator" role="separator" aria-hidden="true"></div>
       <div class="stream-banned__row">${renderBannedRow(round2, poolData, selectedPokemonId)}</div>`;
+      return;
+    }
+
+    const headersEl = list.querySelector('.stream-banned__headers');
+    if (headersEl) {
+      headersEl.innerHTML = headers;
+    }
+
+    const rows = list.querySelectorAll('.stream-banned__row');
+    if (rows[0]) syncBannedRow(rows[0], round1, poolData, selectedPokemonId);
+    if (rows[1]) syncBannedRow(rows[1], round2, poolData, selectedPokemonId);
   }
 
 
@@ -491,6 +618,7 @@
 
   let lastRenderSnapshot = {
     teamsKey: '',
+    playerNamesKey: '',
     active: -2,
     spotlightId: null,
     selectedId: null,
@@ -499,12 +627,20 @@
   };
 
   function getTeamsKey(state) {
-    const names = (state.players || []).map((p) => p.name).join('\0');
-    return `${names}|${JSON.stringify(state.teams)}`;
+    return JSON.stringify(state.teams);
+  }
+
+  function getPlayerNamesKey(state) {
+    return (state.players || []).map((p) => p.name).join('\0');
   }
 
   function getBansKey(state) {
-    return (state.bans || []).map((b) => b.pokemonId).join(',');
+    const bans = state.bans || [];
+    const parts = bans.map((b, index) => {
+      const pi = typeof b.playerIndex === 'number' ? b.playerIndex : index % global.DraftState.PLAYER_COUNT;
+      return `${index}:${pi}:${b.pokemonId}`;
+    });
+    return `${state.totalBansDone}|${parts.join(',')}`;
   }
 
   function updateActivePlayerPanels(active) {
@@ -513,21 +649,82 @@
     });
   }
 
-  function renderPlayerSide(container, state, indices, active, side, poolData) {
+  function syncPlayerSide(container, state, indices, active, side, poolData) {
+    const { DraftState } = global;
     const selectedPokemonId = state.selectedPokemonId || null;
-    container.innerHTML = indices
-      .map((i) =>
-        renderPlayerPanel(
-          state.players[i],
-          i,
-          state.teams[i] || [],
-          i === active,
-          side,
-          poolData,
-          selectedPokemonId
+    const pickCount = DraftState.PICKS_PER_PLAYER;
+
+    indices.forEach((playerIndex) => {
+      let article = container.querySelector(`[data-player="${playerIndex}"]`);
+      const player = state.players[playerIndex];
+      const team = state.teams[playerIndex] || [];
+
+      if (!article) {
+        container.insertAdjacentHTML(
+          'beforeend',
+          renderPlayerPanel(player, playerIndex, team, playerIndex === active, side, poolData, selectedPokemonId)
+        );
+        return;
+      }
+
+      article.classList.toggle('active', playerIndex === active);
+      const nameEl = article.querySelector('.stream-player__name');
+      if (nameEl) nameEl.textContent = player.name;
+
+      const slotsWrap = article.querySelector('.stream-player__slots');
+      if (!slotsWrap) return;
+
+      for (let s = 0; s < pickCount; s++) {
+        const pick = team[s];
+        let slotEl = slotsWrap.children[s];
+        const pickId = pick?.id || '';
+        const currentPickId = slotEl?.dataset?.pickId ?? null;
+
+        if (!slotEl) {
+          slotsWrap.insertAdjacentHTML(
+            'beforeend',
+            pick ? renderFilledSlotHtml(pick, poolData, selectedPokemonId) : renderEmptySlotHtml()
+          );
+          continue;
+        }
+
+        if (pick && pickId === currentPickId) {
+          syncFilledSlotEl(slotEl, pick, poolData, selectedPokemonId);
+        } else if (!pick && currentPickId === '') {
+          syncEmptySlotEl(slotEl);
+        } else if (pick) {
+          syncFilledSlotEl(slotEl, pick, poolData, selectedPokemonId);
+        } else {
+          syncEmptySlotEl(slotEl);
+        }
+      }
+
+      while (slotsWrap.children.length > pickCount) {
+        slotsWrap.lastElementChild.remove();
+      }
+    });
+  }
+
+  function renderPlayerSide(container, state, indices, active, side, poolData) {
+    const hasPanels = container.querySelector('.stream-player');
+    if (!hasPanels) {
+      const selectedPokemonId = state.selectedPokemonId || null;
+      container.innerHTML = indices
+        .map((i) =>
+          renderPlayerPanel(
+            state.players[i],
+            i,
+            state.teams[i] || [],
+            i === active,
+            side,
+            poolData,
+            selectedPokemonId
+          )
         )
-      )
-      .join('');
+        .join('');
+      return;
+    }
+    syncPlayerSide(container, state, indices, active, side, poolData);
   }
 
   function getTurnDurationSec() {
@@ -594,14 +791,30 @@
     const left = document.getElementById('stream-left');
     const right = document.getElementById('stream-right');
 
+    const playerNamesKey = getPlayerNamesKey(state);
+
     if (teamsKey !== lastRenderSnapshot.teamsKey) {
       if (left) renderPlayerSide(left, state, [0, 1, 2, 3], active, 'left', poolData);
       if (right) renderPlayerSide(right, state, [4, 5, 6, 7], active, 'right', poolData);
       lastRenderSnapshot.teamsKey = teamsKey;
+      lastRenderSnapshot.playerNamesKey = playerNamesKey;
       lastRenderSnapshot.active = active;
-    } else if (active !== lastRenderSnapshot.active) {
-      updateActivePlayerPanels(active);
-      lastRenderSnapshot.active = active;
+    } else {
+      if (playerNamesKey !== lastRenderSnapshot.playerNamesKey) {
+        document.querySelectorAll('.stream-player').forEach((el) => {
+          const idx = Number(el.dataset.player);
+          const name = state.players[idx]?.name;
+          if (name) {
+            const nameEl = el.querySelector('.stream-player__name');
+            if (nameEl) nameEl.textContent = name;
+          }
+        });
+        lastRenderSnapshot.playerNamesKey = playerNamesKey;
+      }
+      if (active !== lastRenderSnapshot.active) {
+        updateActivePlayerPanels(active);
+        lastRenderSnapshot.active = active;
+      }
     }
 
     if (spotlightId !== lastRenderSnapshot.spotlightId) {

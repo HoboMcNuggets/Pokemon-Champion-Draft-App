@@ -143,16 +143,48 @@
     return url && url !== PLACEHOLDER ? url : PLACEHOLDER;
   }
 
-  function buildFallbacks(primary, pokemon) {
-    const fallbacks = [];
+  function primaryPokeosRenderUrl(pokemon, entry) {
+    if (entry?.s === 'render' && entry.u) return entry.u;
+    if (isGigantamaxPokemon(pokemon)) return pokeosGmaxRenderUrl(pokemon.pokedexId);
+    const slugs = guessPokeosSlugs(pokemon);
+    for (const slug of slugs) {
+      if (!slug.endsWith('-gmax')) return pokeosRenderUrl(slug);
+    }
+    return null;
+  }
+
+  /**
+   * Entrée Pokeos : animé → Showdown → render → placeholder.
+   * @returns {{ url: string, fallbacks: string[] }}
+   */
+  function resolvePokeosEntry(pokemon, entry) {
+    const chain = [];
+
+    if (entry.s === 'animated' && entry.u) {
+      chain.push(entry.u);
+    }
+
     const showdown = showdownUrl(pokemon);
-    if (showdown !== PLACEHOLDER && showdown !== primary) {
-      fallbacks.push(showdown);
+    if (showdown !== PLACEHOLDER) {
+      chain.push(showdown);
     }
-    if (!fallbacks.includes(PLACEHOLDER) && primary !== PLACEHOLDER) {
-      fallbacks.push(PLACEHOLDER);
+
+    const renderUrl = primaryPokeosRenderUrl(pokemon, entry);
+    if (renderUrl) {
+      chain.push(renderUrl);
     }
-    return fallbacks;
+
+    chain.push(PLACEHOLDER);
+
+    const unique = [];
+    for (const u of chain) {
+      if (!unique.includes(u)) unique.push(u);
+    }
+
+    return {
+      url: unique[0] || PLACEHOLDER,
+      fallbacks: unique.slice(1),
+    };
   }
 
   function resolveFromIndex(pokemon) {
@@ -168,11 +200,8 @@
       };
     }
 
-    if (entry.u) {
-      return {
-        url: entry.u,
-        fallbacks: buildFallbacks(entry.u, pokemon),
-      };
+    if (entry.u || entry.s === 'render') {
+      return resolvePokeosEntry(pokemon, entry);
     }
 
     return null;

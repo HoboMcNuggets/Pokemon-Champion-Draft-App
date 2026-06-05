@@ -382,9 +382,15 @@
     const fbIdx = Number(img.dataset.spriteFallbackIdx || 0);
     if (fbIdx < fallbacks.length) {
       const next = fallbacks[fbIdx];
+      if (img.src === next || img.dataset.spriteSrc === next) {
+        img.dataset.spriteFallbackIdx = String(fbIdx + 1);
+        handleSpriteError(img);
+        return;
+      }
       img.dataset.spriteFallbackIdx = String(fbIdx + 1);
       img.dataset.spriteSrc = next;
       img.dataset.spriteRetries = '0';
+      delete img.dataset.spriteLoaded;
       img.src = next;
       return;
     }
@@ -418,6 +424,10 @@
     }, delay);
   }
 
+  function spriteCacheKey(pokemon, url) {
+    return `${pokemon?.id || ''}\0${url || ''}`;
+  }
+
   function tag(spriteUrl, options) {
     const opts = options || {};
     const src = spriteUrl || PLACEHOLDER;
@@ -432,7 +442,23 @@
     const loading = opts.loading ? ` loading="${escapeAttr(opts.loading)}"` : '';
     const decoding = opts.decoding ? ` decoding="${escapeAttr(opts.decoding)}"` : '';
     const draggable = opts.draggable === false ? ' draggable="false"' : '';
-    return `<img${cls} src="${escapeAttr(src)}" data-sprite-src="${escapeAttr(src)}"${fbAttr}${alt}${loading}${decoding}${draggable} onerror="handleSpriteError(this)">`;
+    const pokeId = opts.pokemonId || opts.id;
+    const pokeAttr = pokeId ? ` data-pokemon-id="${escapeAttr(pokeId)}"` : '';
+    return `<img${cls} src="${escapeAttr(src)}" data-sprite-src="${escapeAttr(src)}"${pokeAttr}${fbAttr}${alt}${loading}${decoding}${draggable} onload="this.dataset.spriteLoaded='1'" onerror="handleSpriteError(this)">`;
+  }
+
+  /**
+   * Met à jour le contenu sprite d'un slot sans recréer l'img si l'URL est inchangée.
+   * @returns {boolean} true si le DOM a été modifié
+   */
+  function syncSlotContent(container, pokemon, options) {
+    if (!container || !pokemon) return false;
+    const resolved = resolveSprite(pokemon);
+    const key = spriteCacheKey(pokemon, resolved.url);
+    if (container.dataset.spriteCacheKey === key) return false;
+    container.dataset.spriteCacheKey = key;
+    container.innerHTML = renderSlotForPokemon(pokemon, options);
+    return true;
   }
 
   function resolveSprite(pokemon) {
@@ -503,6 +529,8 @@
     isMegaPokemon,
     renderSlotContent,
     renderSlotForPokemon,
+    syncSlotContent,
+    spriteCacheKey,
     handleError: handleSpriteError,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
