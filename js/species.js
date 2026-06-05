@@ -66,6 +66,66 @@
 
 
 
+  function getPoolPokemon(pool) {
+
+    if (!pool) return [];
+
+    if (Array.isArray(pool)) return pool;
+
+    if (Array.isArray(pool.pokemon)) return pool.pokemon;
+
+    return [];
+
+  }
+
+
+
+  /**
+
+   * Méga liées (ex. Charizard X/Y) : mêmes speciesKey, plusieurs isMega.
+
+   * @returns {string[]} ids à bloquer ensemble lors d'un ban/pick méga
+
+   */
+
+  function getLinkedMegaIds(pokemon, pool) {
+
+    if (!pokemon?.isMega) return [];
+
+    const entries = getPoolPokemon(pool).filter(
+
+      (p) => p.isMega === true && p.speciesKey === pokemon.speciesKey
+
+    );
+
+    if (entries.length <= 1) return [pokemon.id];
+
+    return entries.map((p) => p.id);
+
+  }
+
+
+
+  function getLinkedMegaSiblingIds(pokemon, pool) {
+
+    return getLinkedMegaIds(pokemon, pool).filter((id) => id !== pokemon.id);
+
+  }
+
+
+
+  function isMegaPickRef(pick) {
+
+    if (!pick) return false;
+
+    if (String(pick.pokedexId || '').endsWith('-M')) return true;
+
+    return /-m(?:-|$)/.test(String(pick.id || ''));
+
+  }
+
+
+
   /**
 
    * Éligibilité draft : espèce bloquée (ban base ou pick) ou id précis banni (ban méga).
@@ -256,6 +316,14 @@
     getBaseTotal,
 
     normalizeAvailability,
+
+    getPoolPokemon,
+
+    getLinkedMegaIds,
+
+    getLinkedMegaSiblingIds,
+
+    isMegaPickRef,
 
     isSelectable,
 

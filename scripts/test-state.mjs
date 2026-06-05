@@ -103,7 +103,7 @@ const mega = pool.pokemon.find((p) => p.id === '0003-m');
 
 assert(DraftState.canBan(mega, state), 'canBan actif en phase ban');
 
-state = DraftState.applyBan(state, mega);
+state = DraftState.applyBan(state, mega, pool);
 
 assert(state.bans.length === 1, '1 ban enregistré');
 
@@ -121,7 +121,7 @@ assert(!PokemonSpecies.isSelectable(mega, state), 'ban méga : même forme indis
 
 
 
-state = DraftState.applyBan(state, venusaur);
+state = DraftState.applyBan(state, venusaur, pool);
 
 assert(!PokemonSpecies.isSelectable(venusaur, state), 'ban base bloque la forme de base');
 
@@ -149,15 +149,15 @@ const megaCharizardY = pool.pokemon.find((p) => p.id === '0006-m-y');
 
 let charizardBanState = DraftState.startDraft(DraftState.createInitialState());
 
-charizardBanState = DraftState.applyBan(charizardBanState, megaCharizardX);
+charizardBanState = DraftState.applyBan(charizardBanState, megaCharizardX, pool);
 
 assert(PokemonSpecies.isSelectable(charizard, charizardBanState), 'ban méga X : Charizard dispo');
 
-assert(PokemonSpecies.isSelectable(megaCharizardY, charizardBanState), 'ban méga X : méga Y dispo');
+assert(!PokemonSpecies.isSelectable(megaCharizardY, charizardBanState), 'ban méga X : méga Y indispo');
 
 assert(!PokemonSpecies.isSelectable(megaCharizardX, charizardBanState), 'ban méga X : méga X indispo');
 
-charizardBanState = DraftState.applyBan(charizardBanState, charizard);
+charizardBanState = DraftState.applyBan(charizardBanState, charizard, pool);
 
 assert(!PokemonSpecies.isSelectable(megaCharizardY, charizardBanState), 'ban Charizard : méga Y indispo');
 
@@ -170,10 +170,26 @@ const activePick = DraftState.getActivePlayerIndex(pickState);
 assert(activePick === 0, 'premier pick → joueur 0');
 assert(DraftState.canAssignPick(pickMon, pickState, activePick), 'canAssignPick joueur actif');
 assert(!DraftState.canAssignPick(pickMon, pickState, 1), 'canAssignPick refuse autre joueur');
-pickState = DraftState.assignPick(pickState, activePick, pickMon);
+pickState = DraftState.assignPick(pickState, activePick, pickMon, pool);
 assert(pickState.teams[0].length === 1, 'pick assigné au joueur 0');
 const megaX = pool.pokemon.find((p) => p.id === '0006-m-x');
-assert(!PokemonSpecies.isSelectable(megaX, pickState.usedSpecies), 'pick charizard bloque méga X');
+const megaY = pool.pokemon.find((p) => p.id === '0006-m-y');
+assert(!PokemonSpecies.isSelectable(megaX, pickState), 'pick charizard bloque méga X');
+assert(!PokemonSpecies.isSelectable(megaY, pickState), 'pick charizard bloque méga Y');
+
+let megaPickState = DraftState.startDraft(DraftState.createInitialState());
+megaPickState = { ...megaPickState, phase: PHASE.DRAFT, totalBansDone: DraftState.TOTAL_BANS };
+megaPickState = DraftState.assignPick(megaPickState, 0, megaX, pool);
+assert(PokemonSpecies.isSelectable(charizard, megaPickState), 'pick méga X : Charizard dispo');
+assert(!PokemonSpecies.isSelectable(megaY, megaPickState), 'pick méga X : méga Y indispo');
+assert(!PokemonSpecies.isSelectable(megaX, megaPickState), 'pick méga X : méga X indispo');
+
+let megaYPickState = DraftState.startDraft(DraftState.createInitialState());
+megaYPickState = { ...megaYPickState, phase: PHASE.DRAFT, totalBansDone: DraftState.TOTAL_BANS };
+megaYPickState = DraftState.assignPick(megaYPickState, 0, megaCharizardY, pool);
+assert(PokemonSpecies.isSelectable(charizard, megaYPickState), 'pick méga Y : Charizard dispo');
+assert(!PokemonSpecies.isSelectable(megaX, megaYPickState), 'pick méga Y : méga X indispo');
+assert(!PokemonSpecies.isSelectable(megaCharizardY, megaYPickState), 'pick méga Y : méga Y indispo');
 
 state = DraftState.startDraft(state);
 for (let i = 0; i < DraftState.TOTAL_BANS; i++) {
@@ -183,7 +199,7 @@ for (let i = 0; i < DraftState.TOTAL_BANS; i++) {
   );
   assert(candidate, `candidat ban ${i}`);
   assert(active === DraftState.getBanPlayerIndex(state.totalBansDone), `joueur actif ban ${i}`);
-  state = DraftState.applyBan(state, candidate);
+  state = DraftState.applyBan(state, candidate, poolLarge);
 }
 assert(state.phase === PHASE.DRAFT, '16 bans → phase draft');
 assert(state.totalBansDone === 16, 'totalBansDone = 16');
@@ -196,7 +212,7 @@ for (let i = state.totalPicksDone; i < DraftState.TOTAL_PICKS; i++) {
     (p) => p.enabled && PokemonSpecies.isSelectable(p, state)
   );
   assert(candidate, `candidat pick ${i}`);
-  state = DraftState.assignPick(state, active, candidate);
+  state = DraftState.assignPick(state, active, candidate, poolLarge);
 }
 
 assert(state.phase === PHASE.COMPLETE, '64 picks → terminé');
@@ -210,14 +226,14 @@ for (let i = 0; i < DraftState.TOTAL_BANS; i++) {
   const c = poolLarge.pokemon.find(
     (p) => p.enabled && PokemonSpecies.isSelectable(p, pickTest)
   );
-  pickTest = DraftState.applyBan(pickTest, c);
+  pickTest = DraftState.applyBan(pickTest, c, poolLarge);
 }
 const active0 = DraftState.getActivePlayerIndex(pickTest);
 for (let s = 0; s < DraftState.PICKS_PER_PLAYER; s++) {
   const c = poolLarge.pokemon.find(
     (p) => p.enabled && PokemonSpecies.isSelectable(p, pickTest)
   );
-  pickTest = DraftState.assignPick(pickTest, active0, c);
+  pickTest = DraftState.assignPick(pickTest, active0, c, poolLarge);
 }
 const extra = poolLarge.pokemon.find(
   (p) => p.enabled && PokemonSpecies.isSelectable(p, pickTest)
@@ -249,9 +265,9 @@ swapState = DraftState.setPlayerNames(swapState, [
   { slot: 7, name: 'J8' },
 ]);
 const swapBan1 = pool.pokemon.find((p) => p.enabled && PokemonSpecies.isSelectable(p, swapState));
-swapState = DraftState.applyBan(swapState, swapBan1);
+swapState = DraftState.applyBan(swapState, swapBan1, pool);
 const swapBan2 = pool.pokemon.find((p) => p.enabled && PokemonSpecies.isSelectable(p, swapState));
-swapState = DraftState.applyBan(swapState, swapBan2);
+swapState = DraftState.applyBan(swapState, swapBan2, pool);
 assert(swapState.bans[1].playerIndex === 1, 'ban 1 attribué joueur 1 avant swap');
 const historyLenBeforeSwap = swapState.actionHistory.length;
 assert(!DraftState.canSwapPlayerSlots(swapState, 1, 1), 'canSwap refuse même index');
@@ -268,7 +284,7 @@ activeSwapState = DraftState.setPlayerNames(
   activeSwapState,
   Array.from({ length: 8 }, (_, i) => ({ slot: i, name: `Joueur ${i + 1}` }))
 );
-activeSwapState = DraftState.applyBan(activeSwapState, swapBan1);
+activeSwapState = DraftState.applyBan(activeSwapState, swapBan1, pool);
 assert(DraftState.getActivePlayerIndex(activeSwapState) === 1, 'actif slot 1 avant swap');
 activeSwapState = DraftState.swapPlayerSlots(activeSwapState, 1, 7);
 assert(DraftState.getActivePlayerIndex(activeSwapState) === 1, 'actif slot inchangé après swap');
@@ -319,7 +335,7 @@ const banCandidate = pool.pokemon.find(
 
 );
 
-exportState = DraftState.applyBan(exportState, banCandidate);
+exportState = DraftState.applyBan(exportState, banCandidate, pool);
 
 
 

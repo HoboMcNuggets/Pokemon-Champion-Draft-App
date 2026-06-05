@@ -88,7 +88,7 @@ assert(DraftRecap.formatDuration(null) === '—', 'Durée manquante = —');
 let state = DraftState.createInitialState();
 state = DraftState.startDraft(state);
 const charizard = DraftState.findPokemon(pool, '0006');
-state = DraftState.applyBan(state, charizard);
+state = DraftState.applyBan(state, charizard, pool);
 assert(state.draftStartedAt != null, 'draftStartedAt au premier ban');
 
 const start = state.draftStartedAt;

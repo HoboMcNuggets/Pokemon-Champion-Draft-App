@@ -816,7 +816,7 @@
       return;
     }
 
-    state = DraftState.applyBan(state, pokemon);
+    state = DraftState.applyBan(state, pokemon, poolData);
     clearPokemonSearch();
     persist();
     renderAll();
@@ -836,7 +836,7 @@
       return;
     }
 
-    state = DraftState.assignPick(state, playerIndex, pokemon);
+    state = DraftState.assignPick(state, playerIndex, pokemon, poolData);
     clearPokemonSearch();
     persist();
     renderAll();
@@ -867,24 +867,9 @@
 
   function getSlotPickerCandidates(playerIndex, slotIndex) {
     if (!poolData) return [];
-    const team = state.teams[playerIndex] || [];
-    const current = team[slotIndex];
-    let availability = {
-      usedSpecies: state.usedSpecies,
-      bannedPokemonIds: state.bannedPokemonIds || [],
-    };
-    if (current?.speciesKey) {
-      availability = {
-        ...availability,
-        usedSpecies: state.usedSpecies.filter((k) => k !== current.speciesKey),
-      };
-    }
-    if (current?.id) {
-      availability = {
-        ...availability,
-        bannedPokemonIds: availability.bannedPokemonIds.filter((id) => id !== current.id),
-      };
-    }
+    const availability = DraftState.getPoolAvailability(state, poolData, {
+      excludeSlot: { playerIndex, slotIndex },
+    });
     return PokemonSpecies.filterSelectable(poolData.pokemon, availability);
   }
 
@@ -944,7 +929,7 @@
     if (!pokemon) return;
 
     const { playerIndex, slotIndex } = slotPickerContext;
-    state = DraftState.setTeamSlot(state, playerIndex, slotIndex, pokemon);
+    state = DraftState.setTeamSlot(state, playerIndex, slotIndex, pokemon, poolData);
     closeSlotPicker();
     persist();
     renderAll();
@@ -956,7 +941,7 @@
     const { playerIndex, slotIndex } = slotPickerContext;
     if (!DraftState.canClearTeamSlot(state, playerIndex, slotIndex)) return;
 
-    state = DraftState.setTeamSlot(state, playerIndex, slotIndex, null);
+    state = DraftState.setTeamSlot(state, playerIndex, slotIndex, null, poolData);
     closeSlotPicker();
     persist();
     renderAll();

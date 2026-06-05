@@ -278,11 +278,23 @@
 
 
 
-  function applyBan(state, pokemon) {
+  function mergeBlockedPokemonIds(existing, ids) {
+
+    return [...new Set([...(existing || []), ...ids])];
+
+  }
+
+
+
+  function applyBan(state, pokemon, pool) {
 
     const playerIndex = getActivePlayerIndex(state);
 
     const isMegaBan = pokemon.isMega === true;
+
+    const blockedPokemonIds = isMegaBan
+      ? global.PokemonSpecies.getLinkedMegaIds(pokemon, pool)
+      : [pokemon.id];
 
     const entry = {
 
@@ -293,6 +305,8 @@
       speciesKey: pokemon.speciesKey,
 
       isMega: isMegaBan,
+
+      blockedPokemonIds: isMegaBan ? blockedPokemonIds : undefined,
 
       pokemon: {
 
@@ -322,7 +336,7 @@
       : [...state.usedSpecies, pokemon.speciesKey];
 
     const bannedPokemonIds = isMegaBan
-      ? [...(state.bannedPokemonIds || []), pokemon.id]
+      ? mergeBlockedPokemonIds(state.bannedPokemonIds, blockedPokemonIds)
       : state.bannedPokemonIds || [];
 
     let next = {
@@ -357,6 +371,8 @@
 
           isMega: isMegaBan,
 
+          blockedPokemonIds: isMegaBan ? blockedPokemonIds : undefined,
+
         },
 
       ],
@@ -379,7 +395,13 @@
 
 
 
-  function assignPick(state, playerIndex, pokemon) {
+  function assignPick(state, playerIndex, pokemon, pool) {
+
+    const isMegaPick = pokemon.isMega === true;
+
+    const blockedSiblingIds = isMegaPick
+      ? global.PokemonSpecies.getLinkedMegaSiblingIds(pokemon, pool)
+      : [];
 
     const teamSlot = [...state.teams];
 
@@ -413,11 +435,23 @@
 
       teams: teamSlot,
 
-      usedSpecies: state.usedSpecies.includes(pokemon.speciesKey)
-
+      usedSpecies: isMegaPick
         ? state.usedSpecies
+        : state.usedSpecies.includes(pokemon.speciesKey)
+          ? state.usedSpecies
+          : [...state.usedSpecies, pokemon.speciesKey],
 
-        : [...state.usedSpecies, pokemon.speciesKey],
+      bannedPokemonIds: mergeBlockedPokemonIds(
+
+        isMegaPick
+
+          ? mergeBlockedPokemonIds(state.bannedPokemonIds, blockedSiblingIds)
+
+          : state.bannedPokemonIds || [],
+
+        [pokemon.id]
+
+      ),
 
       totalPicksDone,
 
@@ -436,6 +470,10 @@
           pokemonId: pokemon.id,
 
           speciesKey: pokemon.speciesKey,
+
+          isMega: isMegaPick,
+
+          blockedPokemonIds: isMegaPick ? blockedSiblingIds : undefined,
 
         },
 
@@ -503,25 +541,13 @@
 
       }
 
-      let bannedPokemonIds = [...(state.bannedPokemonIds || [])];
-
-      if (isMegaBan) {
-
-        const idIdx = bannedPokemonIds.lastIndexOf(last.pokemonId);
-
-        if (idIdx >= 0) bannedPokemonIds.splice(idIdx, 1);
-
-      }
-
-
-
       const totalBansDone = Math.max(0, state.totalBansDone - 1);
 
       next.bans = bans;
 
       next.usedSpecies = usedSpecies;
 
-      next.bannedPokemonIds = bannedPokemonIds;
+      next.bannedPokemonIds = rebuildBannedPokemonIds({ ...state, bans, teams: state.teams });
 
       next.totalBansDone = totalBansDone;
 
@@ -541,21 +567,27 @@
 
 
 
+      const isMegaPick = last.isMega === true;
+
       const usedSpecies = [...state.usedSpecies];
 
-      const stillUsed = teams.flat().some((p) => p.speciesKey === last.speciesKey);
+      if (!isMegaPick) {
 
-      const stillBanned = state.bans.some(
+        const stillUsed = teams.flat().some((p) => p.speciesKey === last.speciesKey);
 
-        (b) => b.isMega !== true && b.speciesKey === last.speciesKey
+        const stillBanned = state.bans.some(
 
-      );
+          (b) => b.isMega !== true && b.speciesKey === last.speciesKey
 
-      if (!stillUsed && !stillBanned) {
+        );
 
-        const idx = usedSpecies.indexOf(last.speciesKey);
+        if (!stillUsed && !stillBanned) {
 
-        if (idx >= 0) usedSpecies.splice(idx, 1);
+          const idx = usedSpecies.indexOf(last.speciesKey);
+
+          if (idx >= 0) usedSpecies.splice(idx, 1);
+
+        }
 
       }
 
@@ -566,6 +598,8 @@
       next.teams = teams;
 
       next.usedSpecies = usedSpecies;
+
+      next.bannedPokemonIds = rebuildBannedPokemonIds({ ...state, teams });
 
       next.totalPicksDone = totalPicksDone;
 
@@ -749,6 +783,8 @@
 
       .flat()
 
+      .filter((p) => !global.PokemonSpecies.isMegaPickRef(p))
+
       .map((p) => p.speciesKey)
 
       .filter(Boolean);
@@ -759,21 +795,141 @@
 
 
 
-  function rebuildBannedPokemonIds(state) {
+  function rebuildBannedPokemonIds(state, pool) {
 
-    return [
+    let ids = [];
 
-      ...new Set(
 
-        (state.bans || [])
 
-          .filter((b) => b.isMega === true && b.pokemonId)
+    for (const ban of state.bans || []) {
 
-          .map((b) => b.pokemonId)
+      if (ban.isMega !== true || !ban.pokemonId) continue;
 
-      ),
+      if (ban.blockedPokemonIds?.length) {
 
-    ];
+        ids = mergeBlockedPokemonIds(ids, ban.blockedPokemonIds);
+
+        continue;
+
+      }
+
+      if (pool) {
+
+        const pokemon = findPokemon(pool, ban.pokemonId);
+
+        if (pokemon) {
+
+          ids = mergeBlockedPokemonIds(
+
+            ids,
+
+            global.PokemonSpecies.getLinkedMegaIds(pokemon, pool)
+
+          );
+
+          continue;
+
+        }
+
+      }
+
+      ids = mergeBlockedPokemonIds(ids, [ban.pokemonId]);
+
+    }
+
+
+
+    const picks = (state.teams || []).flat();
+
+    for (const pick of picks) {
+
+      if (pick?.id) {
+
+        ids = mergeBlockedPokemonIds(ids, [pick.id]);
+
+      }
+
+    }
+
+
+
+    for (const pick of picks) {
+
+      if (!global.PokemonSpecies.isMegaPickRef(pick)) continue;
+
+      if (pool) {
+
+        const pokemon = findPokemon(pool, pick.id);
+
+        if (pokemon) {
+
+          ids = mergeBlockedPokemonIds(
+
+            ids,
+
+            global.PokemonSpecies.getLinkedMegaSiblingIds(pokemon, pool)
+
+          );
+
+          continue;
+
+        }
+
+      }
+
+      for (const other of picks) {
+
+        if (other.id === pick.id) continue;
+
+        if (!global.PokemonSpecies.isMegaPickRef(other)) continue;
+
+        if (other.speciesKey === pick.speciesKey) {
+
+          ids = mergeBlockedPokemonIds(ids, [other.id]);
+
+        }
+
+      }
+
+    }
+
+
+
+    return ids;
+
+  }
+
+
+
+  function getPoolAvailability(state, pool, options) {
+
+    const opts = options || {};
+
+    let teams = state.teams || [];
+
+    if (opts.excludeSlot) {
+
+      const { playerIndex, slotIndex } = opts.excludeSlot;
+
+      teams = teams.map((team, i) => {
+
+        if (i !== playerIndex) return team;
+
+        return team.filter((_, si) => si !== slotIndex);
+
+      });
+
+    }
+
+    const snapshot = { ...state, teams };
+
+    return {
+
+      usedSpecies: rebuildUsedSpecies(snapshot),
+
+      bannedPokemonIds: rebuildBannedPokemonIds(snapshot, pool),
+
+    };
 
   }
 
@@ -799,7 +955,7 @@
 
 
 
-  function setTeamSlot(state, playerIndex, slotIndex, pokemon) {
+  function setTeamSlot(state, playerIndex, slotIndex, pokemon, pool) {
 
     if (playerIndex < 0 || playerIndex >= PLAYER_COUNT) return state;
 
@@ -832,6 +988,8 @@
         ...clearedState,
 
         usedSpecies: rebuildUsedSpecies(clearedState),
+
+        bannedPokemonIds: rebuildBannedPokemonIds(clearedState, pool),
 
         selectedPokemonId: null,
 
@@ -898,6 +1056,8 @@
       ...nextState,
 
       usedSpecies: rebuildUsedSpecies(nextState),
+
+      bannedPokemonIds: rebuildBannedPokemonIds(nextState, pool),
 
       selectedPokemonId: null,
 
@@ -1185,7 +1345,7 @@
 
   function importDraftState(rawState, pool) {
 
-    let state = deserialize(rawState);
+    let state = deserialize(rawState, pool);
 
     state = {
 
@@ -1193,7 +1353,7 @@
 
       usedSpecies: rebuildUsedSpecies(state),
 
-      bannedPokemonIds: rebuildBannedPokemonIds(state),
+      bannedPokemonIds: rebuildBannedPokemonIds(state, pool),
 
     };
 
@@ -1247,7 +1407,7 @@
 
 
 
-  function deserialize(raw) {
+  function deserialize(raw, pool) {
 
     if (!raw) return createInitialState();
 
@@ -1312,7 +1472,7 @@
 
     s.usedSpecies = rebuildUsedSpecies(s);
 
-    s.bannedPokemonIds = rebuildBannedPokemonIds(s);
+    s.bannedPokemonIds = rebuildBannedPokemonIds(s, pool);
 
 
 
@@ -1391,6 +1551,8 @@
     validateStateAgainstPool,
 
     importDraftState,
+
+    getPoolAvailability,
 
     serialize,
 
