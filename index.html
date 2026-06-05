@@ -144,7 +144,18 @@
           <div class="stream-layout__top">
             <div class="stream-layout__top-row">
               <div class="stream-now"><span id="stream-now">—</span></div>
-              <div class="stream-timer hidden" id="stream-timer" aria-live="polite" aria-hidden="true">1:00</div>
+              <div class="stream-timer-group hidden" id="stream-timer-group" aria-hidden="true">
+                <div class="stream-timer" id="stream-timer" aria-live="polite">1:00</div>
+                <button type="button" class="stream-timer-toggle" id="stream-timer-toggle" aria-label="Mettre en pause le timer" title="Pause">
+                  <svg class="stream-timer-toggle__icon stream-timer-toggle__icon--pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <rect x="6" y="5" width="4" height="14" fill="currentColor"></rect>
+                    <rect x="14" y="5" width="4" height="14" fill="currentColor"></rect>
+                  </svg>
+                  <svg class="stream-timer-toggle__icon stream-timer-toggle__icon--play" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <polygon points="8,5 19,12 8,19" fill="currentColor"></polygon>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="stream-next">Prochain : <strong id="stream-next-name">—</strong></div>
           </div>

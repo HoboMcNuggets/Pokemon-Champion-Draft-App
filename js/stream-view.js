@@ -499,6 +499,7 @@
 
   let timerInterval = null;
   let timerRemainingSec = turnDurationSec;
+  let timerPaused = false;
   let lastTurnKey = null;
 
   function getTurnKey(state) {
@@ -532,6 +533,33 @@
     el.textContent = formatTimer(remaining);
     el.classList.toggle('stream-timer--warning', remaining > 0 && remaining <= 10);
     el.classList.toggle('stream-timer--expired', remaining <= 0);
+    el.classList.toggle('stream-timer--paused', timerPaused);
+  }
+
+  function refreshTimerPauseButton() {
+    const toggleEl = document.getElementById('stream-timer-toggle');
+    if (!toggleEl) return;
+    toggleEl.classList.toggle('stream-timer-toggle--paused', timerPaused);
+    toggleEl.setAttribute(
+      'aria-label',
+      timerPaused ? 'Reprendre le timer' : 'Mettre en pause le timer'
+    );
+    toggleEl.title = timerPaused ? 'Reprendre' : 'Pause';
+  }
+
+  function setTimerPaused(paused) {
+    timerPaused = !!paused;
+    refreshTimerPauseButton();
+    if (timerPaused) {
+      stopTurnTimerInterval();
+    } else {
+      syncTurnTimerInterval();
+    }
+    refreshTimerDisplays();
+  }
+
+  function toggleTimerPause() {
+    setTimerPaused(!timerPaused);
   }
 
   function applyBannerTimerVisual(el, remaining) {
@@ -541,18 +569,20 @@
   }
 
   function refreshTimerDisplays() {
+    const streamGroupEl = document.getElementById('stream-timer-group');
     const streamEl = document.getElementById('stream-timer');
     const bannerEl = document.getElementById('banner-session-timer');
     const showValues = !!lastTurnKey;
 
-    if (streamEl) {
+    if (streamGroupEl && streamEl) {
       if (showValues && isStreamMode()) {
-        streamEl.classList.remove('hidden');
-        streamEl.setAttribute('aria-hidden', 'false');
+        streamGroupEl.classList.remove('hidden');
+        streamGroupEl.setAttribute('aria-hidden', 'false');
         applyTimerVisual(streamEl, timerRemainingSec);
+        refreshTimerPauseButton();
       } else {
-        streamEl.classList.add('hidden');
-        streamEl.setAttribute('aria-hidden', 'true');
+        streamGroupEl.classList.add('hidden');
+        streamGroupEl.setAttribute('aria-hidden', 'true');
       }
     }
 
@@ -573,12 +603,12 @@
   }
 
   function startTurnTimerInterval() {
-    if (timerInterval || !isStreamMode() || !lastTurnKey) return;
+    if (timerInterval || timerPaused || !isStreamMode() || !lastTurnKey) return;
     timerInterval = setInterval(tickTurnTimer, 1000);
   }
 
   function syncTurnTimerInterval() {
-    if (isStreamMode() && lastTurnKey) {
+    if (isStreamMode() && lastTurnKey && !timerPaused) {
       startTurnTimerInterval();
     } else {
       stopTurnTimerInterval();
@@ -587,6 +617,7 @@
 
   function resetTurnTimerForNewTurn() {
     stopTurnTimerInterval();
+    timerPaused = false;
     timerRemainingSec = turnDurationSec;
     refreshTimerDisplays();
     syncTurnTimerInterval();
@@ -849,6 +880,16 @@
     return formatTimer(timerRemainingSec);
   }
 
+  function initTimerPauseButton() {
+    const toggleEl = document.getElementById('stream-timer-toggle');
+    if (!toggleEl || toggleEl.dataset.bound === '1') return;
+    toggleEl.dataset.bound = '1';
+    toggleEl.addEventListener('click', toggleTimerPause);
+    refreshTimerPauseButton();
+  }
+
+  initTimerPauseButton();
+
   global.StreamView = {
 
     render,
@@ -862,6 +903,10 @@
     getTurnDurationSec,
 
     setTurnDurationSec,
+
+    toggleTimerPause,
+
+    isTimerPaused: () => timerPaused,
 
   };
 
