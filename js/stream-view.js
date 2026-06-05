@@ -77,13 +77,14 @@
     return global.DraftState.getNextPlayerIndex(state);
   }
 
-  function renderPlayerPanel(player, index, team, isActive, side, poolData) {
+  function renderPlayerPanel(player, index, team, isActive, side, poolData, selectedPokemonId) {
     const { DraftState } = global;
     const pickCount = DraftState.PICKS_PER_PLAYER;
     const slots = Array.from({ length: pickCount }, (_, s) => {
       const pick = team[s];
       if (pick) {
-        return `<div class="stream-slot stream-slot--filled">${SpriteImg.renderSlotContent(pick.spriteUrl, {
+        const isSelected = selectedPokemonId === pick.id;
+        return `<div class="stream-slot stream-slot--filled stream-spotlight-selectable${isSelected ? ' stream-spotlight-selectable--selected' : ''}" data-pokemon-id="${escapeAttr(pick.id)}" role="button" tabindex="0" title="${escapeAttr(pick.name)}" aria-label="${escapeAttr(pick.name)}" aria-pressed="${isSelected ? 'true' : 'false'}">${SpriteImg.renderSlotContent(pick.spriteUrl, {
           className: 'stream-slot__sprite',
           alt: pick.name,
           id: pick.id,
@@ -237,7 +238,7 @@
     return { round1, round2 };
   }
 
-  function renderBannedCell(ban, poolData) {
+  function renderBannedCell(ban, poolData, selectedPokemonId) {
     if (!ban) {
       return `
       <div class="stream-banned__cell stream-banned__cell--empty">
@@ -246,6 +247,7 @@
     }
 
     const pokemon = ban.pokemon;
+    const isSelected = selectedPokemonId === ban.pokemonId;
     const isMega = SpriteImg.isMegaPokemon(
       { id: pokemon.id, pokemonId: ban.pokemonId, spriteUrl: pokemon.spriteUrl },
       poolData
@@ -256,18 +258,26 @@
 
     return `
       <div class="stream-banned__cell">
-        <div class="stream-banned__item" title="${escapeAttr(pokemon.name)}" aria-label="${escapeAttr(pokemon.name)}">
+        <div class="stream-banned__item stream-spotlight-selectable${isSelected ? ' stream-spotlight-selectable--selected' : ''}" data-pokemon-id="${escapeAttr(ban.pokemonId)}" role="button" tabindex="0" title="${escapeAttr(pokemon.name)}" aria-label="${escapeAttr(pokemon.name)}" aria-pressed="${isSelected ? 'true' : 'false'}">
           ${SpriteImg.tag(pokemon.spriteUrl)}
         </div>
         ${megaLabel}
       </div>`;
   }
 
-  function renderBannedRow(bansByPlayer, poolData) {
+  function renderBannedRow(bansByPlayer, poolData, selectedPokemonId) {
     const { DraftState } = global;
     return Array.from({ length: DraftState.PLAYER_COUNT }, (_, playerIndex) =>
-      renderBannedCell(bansByPlayer[playerIndex], poolData)
+      renderBannedCell(bansByPlayer[playerIndex], poolData, selectedPokemonId)
     ).join('');
+  }
+
+  function updateSpotlightSelectionHighlights(selectedPokemonId) {
+    document.querySelectorAll('.stream-spotlight-selectable').forEach((el) => {
+      const isSelected = !!selectedPokemonId && el.dataset.pokemonId === selectedPokemonId;
+      el.classList.toggle('stream-spotlight-selectable--selected', isSelected);
+      el.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    });
   }
 
   function renderBanned(state, poolData) {
@@ -289,11 +299,12 @@
       return `<div class="stream-banned__col-head" title="${escapeAttr(name)}">${escapeHtml(name)}</div>`;
     }).join('');
 
+    const selectedPokemonId = state.selectedPokemonId || null;
     list.innerHTML = `
       <div class="stream-banned__headers">${headers}</div>
-      <div class="stream-banned__row">${renderBannedRow(round1, poolData)}</div>
+      <div class="stream-banned__row">${renderBannedRow(round1, poolData, selectedPokemonId)}</div>
       <div class="stream-banned__separator" role="separator" aria-hidden="true"></div>
-      <div class="stream-banned__row">${renderBannedRow(round2, poolData)}</div>`;
+      <div class="stream-banned__row">${renderBannedRow(round2, poolData, selectedPokemonId)}</div>`;
   }
 
 
@@ -473,6 +484,7 @@
     teamsKey: '',
     active: -2,
     spotlightId: null,
+    selectedId: null,
     bansKey: '',
     recapKey: '',
   };
@@ -493,6 +505,7 @@
   }
 
   function renderPlayerSide(container, state, indices, active, side, poolData) {
+    const selectedPokemonId = state.selectedPokemonId || null;
     container.innerHTML = indices
       .map((i) =>
         renderPlayerPanel(
@@ -501,7 +514,8 @@
           state.teams[i] || [],
           i === active,
           side,
-          poolData
+          poolData,
+          selectedPokemonId
         )
       )
       .join('');
@@ -584,6 +598,12 @@
     if (spotlightId !== lastRenderSnapshot.spotlightId) {
       renderSpotlight(spotlightPokemon);
       lastRenderSnapshot.spotlightId = spotlightId;
+    }
+
+    const selectedId = state.selectedPokemonId || null;
+    if (selectedId !== lastRenderSnapshot.selectedId) {
+      updateSpotlightSelectionHighlights(selectedId);
+      lastRenderSnapshot.selectedId = selectedId;
     }
 
     if (bansKey !== lastRenderSnapshot.bansKey) {

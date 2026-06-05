@@ -357,11 +357,11 @@
     const q = searchInput.value;
     let candidates = getSearchCandidates();
 
-    if (
-      state.selectedPokemonId &&
-      !candidates.some((p) => p.id === state.selectedPokemonId)
-    ) {
-      state = { ...state, selectedPokemonId: null };
+    if (state.selectedPokemonId && poolData) {
+      const stillExists = !!DraftState.findPokemon(poolData, state.selectedPokemonId);
+      if (!stillExists) {
+        state = { ...state, selectedPokemonId: null };
+      }
     }
 
     let list = PokemonSpecies.searchPokemon(candidates, q);
@@ -794,6 +794,16 @@
     if (StreamView) StreamView.render(state, poolData);
     renderDashboardRecap();
     placeViewModeSwitch();
+  }
+
+  function selectSpotlightPokemon(id) {
+    if (!id || !poolData) return;
+    const pokemon = DraftState.findPokemon(poolData, id);
+    if (!pokemon) return;
+    const nextId = state.selectedPokemonId === id ? null : id;
+    state = { ...state, selectedPokemonId: nextId };
+    renderSearch();
+    renderAll();
   }
 
   function banSelection() {
@@ -1259,6 +1269,20 @@
 
     $('#pokemon-search').addEventListener('input', renderSearch);
 
+    const streamLayout = $('#stream-layout');
+    streamLayout?.addEventListener('click', (e) => {
+      const el = e.target.closest('.stream-spotlight-selectable');
+      if (!el?.dataset.pokemonId) return;
+      selectSpotlightPokemon(el.dataset.pokemonId);
+    });
+    streamLayout?.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const el = e.target.closest('.stream-spotlight-selectable');
+      if (!el?.dataset.pokemonId) return;
+      e.preventDefault();
+      selectSpotlightPokemon(el.dataset.pokemonId);
+    });
+
     $('#btn-mode-config').addEventListener('click', () => setViewMode('config'));
     $('#btn-mode-stream').addEventListener('click', () => setViewMode('stream'));
 
@@ -1272,8 +1296,19 @@
         undo();
       }
       if (e.key === 'Enter' && state.selectedPokemonId && isStreamMode()) {
-        if (state.phase === PHASE.BAN) banSelection();
-        else if (state.phase === PHASE.DRAFT) assignSelection();
+        const pokemon = poolData
+          ? DraftState.findPokemon(poolData, state.selectedPokemonId)
+          : null;
+        if (pokemon) {
+          if (state.phase === PHASE.BAN && DraftState.canBan(pokemon, state)) {
+            banSelection();
+          } else if (state.phase === PHASE.DRAFT) {
+            const playerIndex = DraftState.getActivePlayerIndex(state);
+            if (DraftState.canAssignPick(pokemon, state, playerIndex)) {
+              assignSelection();
+            }
+          }
+        }
       }
       if (e.key === 'Escape') {
         if (!$('#slot-picker-overlay')?.classList.contains('hidden')) {
