@@ -193,32 +193,59 @@
       </div>`;
   }
 
+  function renderHeaderControls(filters) {
+    const enabledFilter = filters.enabledFilter || 'all';
+    const actions = document.createElement('div');
+    actions.className = 'pokedex-header__actions';
+    actions.innerHTML = `
+          <input type="search" id="pokedex-search" placeholder="Nom ou # Pokédex…" value="${escapeAttr(filters.search || '')}">
+          <select id="pokedex-enabled-filter" aria-label="Filtrer par statut">
+            <option value="all"${enabledFilter === 'all' ? ' selected' : ''}>Tous</option>
+            <option value="active"${enabledFilter === 'active' ? ' selected' : ''}>Actif</option>
+            <option value="inactive"${enabledFilter === 'inactive' ? ' selected' : ''}>Inactif</option>
+          </select>`;
+    return actions;
+  }
+
   function renderHeader(headerEl, poolData, filters, list) {
     const league = poolData?.leagueName || 'Pokédex';
     const label = poolData?.poolLabel ? ` — ${poolData.poolLabel}` : '';
     const total = poolData?.pokemon?.length || 0;
     const shown = list.length;
-    const enabledFilter = filters.enabledFilter || 'all';
     const countLine =
       shown === total
         ? `${total} Pokémon dans le Pokédex`
         : `${shown} affichés sur ${total} Pokémon`;
 
-    headerEl.innerHTML = `
+    let top = headerEl.querySelector('.pokedex-header__top');
+    if (!top) {
+      headerEl.innerHTML = `
       <div class="pokedex-header__top">
         <div class="pokedex-header__title">
-          <h2>${escapeHtml(league)}${escapeHtml(label)}</h2>
-          <p>${countLine}</p>
-        </div>
-        <div class="pokedex-header__actions">
-          <input type="search" id="pokedex-search" placeholder="Nom ou # Pokédex…" value="${escapeHtml(filters.search || '')}">
-          <select id="pokedex-enabled-filter" aria-label="Filtrer par statut">
-            <option value="all"${enabledFilter === 'all' ? ' selected' : ''}>Tous</option>
-            <option value="active"${enabledFilter === 'active' ? ' selected' : ''}>Actif</option>
-            <option value="inactive"${enabledFilter === 'inactive' ? ' selected' : ''}>Inactif</option>
-          </select>
+          <h2></h2>
+          <p></p>
         </div>
       </div>`;
+      top = headerEl.querySelector('.pokedex-header__top');
+    }
+
+    if (!headerEl.querySelector('#pokedex-search')) {
+      top.appendChild(renderHeaderControls(filters));
+    }
+
+    const titleEl = headerEl.querySelector('.pokedex-header__title h2');
+    const countEl = headerEl.querySelector('.pokedex-header__title p');
+    if (titleEl) titleEl.textContent = `${league}${label}`;
+    if (countEl) countEl.textContent = countLine;
+
+    const searchInput = headerEl.querySelector('#pokedex-search');
+    const filterSelect = headerEl.querySelector('#pokedex-enabled-filter');
+    if (searchInput && searchInput !== document.activeElement) {
+      searchInput.value = filters.search || '';
+    }
+    if (filterSelect && filterSelect !== document.activeElement) {
+      filterSelect.value = filters.enabledFilter || 'all';
+    }
   }
 
   function render(root, poolData, uiState) {
@@ -253,16 +280,6 @@
     const list = filterList(pool, filters);
 
     if (headerEl) renderHeader(headerEl, poolData, filters, list);
-
-    const searchInput = root.querySelector('#pokedex-search');
-    if (searchInput && searchInput !== document.activeElement) {
-      searchInput.value = filters.search;
-    }
-
-    const filterSelect = root.querySelector('#pokedex-enabled-filter');
-    if (filterSelect && filterSelect !== document.activeElement) {
-      filterSelect.value = filters.enabledFilter || 'all';
-    }
 
     if (!contentEl) return;
 
