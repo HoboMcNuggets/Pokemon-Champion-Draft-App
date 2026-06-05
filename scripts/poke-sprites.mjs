@@ -3,11 +3,14 @@
  */
 export const SHOWDOWN_SPRITE_BASE = 'https://play.pokemonshowdown.com/sprites/ani/';
 export const SHOWDOWN_INDEX_URL = SHOWDOWN_SPRITE_BASE;
+export const SHOWDOWN_GEN5_BASE = 'https://play.pokemonshowdown.com/sprites/gen5/';
+export const SHOWDOWN_GEN5_INDEX_URL = SHOWDOWN_GEN5_BASE;
 export const PLACEHOLDER = 'assets/sprites/placeholder.svg';
 
 export const NAME_ALIASES = {
   Manetric: 'manectric',
   'Mega Manetric': 'manectric-mega',
+  'Mega Meowstic': 'meowstic-mmega',
   'Mr. Rime': 'mrrime',
   'Tauros (Paldean - Combat)': 'tauros-paldeacombat',
   'Tauros (Paldean - Blaze)': 'tauros-paldeablaze',
@@ -89,7 +92,11 @@ export function guessShowdownSpriteIds(name, isMega, apiSlug) {
 
   if (/mega charizard y/i.test(name)) candidates.push('charizard-megay');
   else if (/mega charizard x/i.test(name)) candidates.push('charizard-megax');
-  else if (isMega) candidates.push(`${slugify(baseSpeciesName(name))}-mega`);
+  else if (isMega) {
+    const base = slugify(baseSpeciesName(name));
+    if (base === 'meowstic') candidates.push('meowstic-mmega', 'meowstic-fmega');
+    candidates.push(`${base}-mega`);
+  }
 
   const paren = name.match(/\(([^)]+)\)/);
   if (paren) {
@@ -134,23 +141,74 @@ export function guessShowdownSpriteIds(name, isMega, apiSlug) {
   return [...new Set(candidates.filter(Boolean))];
 }
 
-export function resolveShowdownSprite(name, isMega, spriteIndex, apiSlug) {
-  const candidates = guessShowdownSpriteIds(name, isMega, apiSlug);
+function resolveInAni(candidates, aniIndex) {
   for (const id of candidates) {
-    if (spriteIndex.has(id)) {
-      return {
-        id,
-        url: SHOWDOWN_SPRITE_BASE + id + '.gif',
-      };
+    if (aniIndex.has(id)) {
+      return { id, url: SHOWDOWN_SPRITE_BASE + id + '.gif', source: 'ani' };
     }
   }
   return null;
+}
+
+function resolveInGen5(candidates, gen5Index) {
+  for (const id of candidates) {
+    if (gen5Index.has(id)) {
+      return { id, url: SHOWDOWN_GEN5_BASE + id + '.png', source: 'gen5' };
+    }
+  }
+  return null;
+}
+
+/**
+ * Résolution Showdown : ani (GIF) puis gen5 (PNG statique), avec repli forme de base.
+ */
+export function resolveShowdownSpriteFull(name, isMega, aniIndex, gen5Index, apiSlug) {
+  const candidates = guessShowdownSpriteIds(name, isMega, apiSlug);
+
+  let sprite = resolveInAni(candidates, aniIndex);
+  if (sprite) return sprite;
+
+  sprite = resolveInGen5(candidates, gen5Index);
+  if (sprite) return sprite;
+
+  if (isMega) {
+    const baseCandidates = guessShowdownSpriteIds(baseSpeciesName(name), false, apiSlug);
+    sprite = resolveInAni(baseCandidates, aniIndex);
+    if (sprite) return { ...sprite, fallback: 'base', requestedMega: true };
+    sprite = resolveInGen5(baseCandidates, gen5Index);
+    if (sprite) return { ...sprite, fallback: 'base', requestedMega: true };
+  }
+
+  if (!isMega && name.includes('(')) {
+    const baseCandidates = guessShowdownSpriteIds(baseSpeciesName(name), false, apiSlug);
+    sprite = resolveInAni(baseCandidates, aniIndex);
+    if (sprite) return { ...sprite, fallback: 'forme' };
+    sprite = resolveInGen5(baseCandidates, gen5Index);
+    if (sprite) return { ...sprite, fallback: 'forme' };
+  }
+
+  return null;
+}
+
+/** @deprecated Préférer resolveShowdownSpriteFull avec index ani + gen5. */
+export function resolveShowdownSprite(name, isMega, spriteIndex, apiSlug) {
+  const emptyGen5 = new Set();
+  return resolveShowdownSpriteFull(name, isMega, spriteIndex, emptyGen5, apiSlug);
 }
 
 export async function loadShowdownSpriteIndex() {
   const html = await (await fetch(SHOWDOWN_INDEX_URL)).text();
   const ids = new Set();
   for (const m of html.matchAll(/href="\.\/([a-z0-9-]+)\.gif"/gi)) {
+    ids.add(m[1].toLowerCase());
+  }
+  return ids;
+}
+
+export async function loadShowdownGen5Index() {
+  const html = await (await fetch(SHOWDOWN_GEN5_INDEX_URL)).text();
+  const ids = new Set();
+  for (const m of html.matchAll(/href="\.\/([a-z0-9-]+)\.png"/gi)) {
     ids.add(m[1].toLowerCase());
   }
   return ids;

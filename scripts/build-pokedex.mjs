@@ -15,10 +15,10 @@ import {
 } from './champions-mapping.mjs';
 import {
   PLACEHOLDER,
-  baseSpeciesName,
   buildId,
+  loadShowdownGen5Index,
   loadShowdownSpriteIndex,
-  resolveShowdownSprite,
+  resolveShowdownSpriteFull,
   speciesKeyFromPokedexId,
 } from './poke-sprites.mjs';
 
@@ -208,9 +208,12 @@ async function main() {
   const pokemonUrls = await fetchAllPokemonUrls();
   console.log(`Ressources /pokemon : ${pokemonUrls.length}`);
 
-  console.log('Indexation des sprites Pokémon Showdown…');
-  const spriteIndex = await loadShowdownSpriteIndex();
-  console.log(`Sprites indexés : ${spriteIndex.size}`);
+  console.log('Indexation des sprites Pokémon Showdown (ani + gen5)…');
+  const [spriteIndex, gen5Index] = await Promise.all([
+    loadShowdownSpriteIndex(),
+    loadShowdownGen5Index(),
+  ]);
+  console.log(`Sprites ani : ${spriteIndex.size}, gen5 : ${gen5Index.size}`);
 
   const speciesCache = new Map();
   const abilityCache = new Map();
@@ -254,14 +257,7 @@ async function main() {
     const abilities = await mapAbilities(detail, abilityCache);
     const baseTotal = Object.values(stats).reduce((a, b) => a + b, 0);
 
-    let sprite = resolveShowdownSprite(name, isMega, spriteIndex, detail.name);
-    if (!sprite && isMega) {
-      sprite = resolveShowdownSprite(baseSpeciesName(name), false, spriteIndex, detail.name);
-    }
-    if (!sprite && name.includes('(')) {
-      sprite = resolveShowdownSprite(baseSpeciesName(name), false, spriteIndex, detail.name);
-    }
-
+    const sprite = resolveShowdownSpriteFull(name, isMega, spriteIndex, gen5Index, detail.name);
     const spriteUrl = sprite?.url || pokeApiSpriteUrl(detail) || PLACEHOLDER;
 
     const entry = {
