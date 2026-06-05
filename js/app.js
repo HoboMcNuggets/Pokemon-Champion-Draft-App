@@ -367,6 +367,78 @@
     return `<span class="player-card__drag-handle" draggable="true" data-player="${playerIndex}" role="button" tabindex="0" aria-label="Déplacer le joueur" title="Déplacer le joueur"><svg class="player-card__drag-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="4" cy="3" r="1.25" fill="currentColor"/><circle cx="10" cy="3" r="1.25" fill="currentColor"/><circle cx="4" cy="7" r="1.25" fill="currentColor"/><circle cx="10" cy="7" r="1.25" fill="currentColor"/><circle cx="4" cy="11" r="1.25" fill="currentColor"/><circle cx="10" cy="11" r="1.25" fill="currentColor"/></svg></span>`;
   }
 
+  function buildDashboardBanMatrix() {
+    const round1 = Array.from({ length: DraftState.PLAYER_COUNT }, () => null);
+    const round2 = Array.from({ length: DraftState.PLAYER_COUNT }, () => null);
+    (state.bans || []).forEach((ban, index) => {
+      const playerIndex =
+        typeof ban.playerIndex === 'number' && ban.playerIndex >= 0
+          ? ban.playerIndex
+          : DraftState.getBanPlayerIndex(index);
+      const round = DraftState.getBanRound(index);
+      if (round === 1) round1[playerIndex] = ban;
+      else if (round === 2) round2[playerIndex] = ban;
+    });
+    return { round1, round2 };
+  }
+
+  function renderDashboardBanSlot(ban, playerIndex, banRound) {
+    const editable = DraftState.canEditBanSlot(state, playerIndex, banRound);
+    const slotAttrs = editable
+      ? `data-ban-player="${playerIndex}" data-ban-round="${banRound}" role="button" tabindex="0"`
+      : '';
+    const clickableClass = editable ? ' ban-slot--clickable' : '';
+
+    if (ban?.pokemon) {
+      const pokemon = lookupPokemon(ban.pokemon);
+      return `<div class="ban-slot ban-slot--filled${clickableClass}" ${slotAttrs}>${SpriteImg.renderSlotForPokemon(pokemon, {
+        alt: ban.pokemon.name,
+        draggable: false,
+        poolData,
+        alwaysWrap: true,
+        wrapClass: 'sprite-slot-wrap sprite-slot-wrap--ban',
+        megaLabelClass: 'sprite-mega-label sprite-mega-label--ban',
+      })}</div>`;
+    }
+
+    return `<div class="ban-slot ban-slot--empty${clickableClass}" ${slotAttrs}><img src="assets/pokemon-ball.png" alt="" draggable="false"></div>`;
+  }
+
+  function renderDashboardBans() {
+    const section = $('#dashboard-bans');
+    const board = $('#dashboard-bans-board');
+    if (!section || !board) return;
+
+    const showBans =
+      !isStreamMode() &&
+      (state.phase === PHASE.BAN || state.phase === PHASE.DRAFT || state.phase === PHASE.COMPLETE);
+    section.classList.toggle('hidden', !showBans);
+    if (!showBans) return;
+
+    const { round1, round2 } = buildDashboardBanMatrix();
+    const headers = state.players
+      .map(
+        (player, i) =>
+          `<div class="dashboard-bans__col-head" title="${escapeAttr(player.name)}">${escapeHtml(player.name)}</div>`
+      )
+      .join('');
+
+    const row = (bansByPlayer, banRound) =>
+      Array.from({ length: DraftState.PLAYER_COUNT }, (_, playerIndex) =>
+        renderDashboardBanSlot(bansByPlayer[playerIndex], playerIndex, banRound)
+      ).join('');
+
+    board.innerHTML = `
+      <div class="dashboard-bans__grid">
+        <div class="dashboard-bans__corner" aria-hidden="true"></div>
+        ${headers}
+        <span class="dashboard-bans__round-label">Tour 1</span>
+        ${row(round1, 1)}
+        <span class="dashboard-bans__round-label">Tour 2</span>
+        ${row(round2, 2)}
+      </div>`;
+  }
+
   function renderPlayersGrid() {
     const grid = $('#players-grid');
     const active = DraftState.getActivePlayerIndex(state);
@@ -1020,6 +1092,7 @@
   function renderAll() {
     if (editingPlayerName === null) {
       renderPlayersGrid();
+      renderDashboardBans();
     }
     renderPhaseBanner();
     renderSearch();
@@ -1128,9 +1201,25 @@
   function updateSlotPickerClearButton() {
     const btn = $('#slot-picker-clear');
     if (!btn || !slotPickerContext) return;
-    const { playerIndex, slotIndex } = slotPickerContext;
-    const canClear = DraftState.canClearTeamSlot(state, playerIndex, slotIndex);
+    let canClear = false;
+    if (slotPickerContext.type === 'ban') {
+      const { playerIndex, banRound } = slotPickerContext;
+      canClear = DraftState.canClearBanSlot(state, playerIndex, banRound);
+    } else {
+      const { playerIndex, slotIndex } = slotPickerContext;
+      canClear = DraftState.canClearTeamSlot(state, playerIndex, slotIndex);
+    }
     btn.classList.toggle('hidden', !canClear);
+  }
+
+  function getBanPickerCandidates(playerIndex, banRound) {
+    if (!poolData) return [];
+    const availability = DraftState.getBanAvailability(state, poolData, {
+      excludeBan: { playerIndex, banRound },
+    });
+    return PokemonSpecies.filterSelectable(poolData.pokemon, availability).filter((p) =>
+      DraftState.canPickForBanSlot(p, state, poolData, playerIndex, banRound)
+    );
   }
 
   function renderSlotPickerResults() {
@@ -1140,8 +1229,14 @@
 
     updateSlotPickerClearButton();
 
-    const { playerIndex, slotIndex } = slotPickerContext;
-    const candidates = getSlotPickerCandidates(playerIndex, slotIndex);
+    let candidates = [];
+    if (slotPickerContext.type === 'ban') {
+      const { playerIndex, banRound } = slotPickerContext;
+      candidates = getBanPickerCandidates(playerIndex, banRound);
+    } else {
+      const { playerIndex, slotIndex } = slotPickerContext;
+      candidates = getSlotPickerCandidates(playerIndex, slotIndex);
+    }
     const q = searchInput ? searchInput.value : '';
     const list = PokemonSpecies.searchPokemon(candidates, q);
 
@@ -1169,7 +1264,9 @@
   }
 
   function closeSlotPicker() {
-    $('#slot-picker-overlay')?.classList.add('hidden');
+    const overlay = $('#slot-picker-overlay');
+    overlay?.classList.add('hidden');
+    overlay?.classList.remove('modal-overlay--ban-picker');
     slotPickerContext = null;
     const searchInput = $('#slot-picker-search');
     if (searchInput) searchInput.value = '';
@@ -1180,8 +1277,24 @@
     const pokemon = DraftState.findPokemon(poolData, pokemonId);
     if (!pokemon) return;
 
-    const { playerIndex, slotIndex } = slotPickerContext;
-    state = DraftState.setTeamSlot(state, playerIndex, slotIndex, pokemon, poolData);
+    if (slotPickerContext.type === 'ban') {
+      const { playerIndex, banRound } = slotPickerContext;
+      if (!DraftState.canPickForBanSlot(pokemon, state, poolData, playerIndex, banRound)) {
+        const kind = DraftState.getRequiredBanKindForSlot(state, playerIndex, banRound);
+        if (kind === 'mega') {
+          showMessage('Ce ban doit être une Mega.', 'error');
+        } else if (kind === 'pokemon') {
+          showMessage('Ce ban doit être un Pokémon (forme de base).', 'error');
+        } else {
+          showMessage('Ce Pokémon ne peut pas être banni ici.', 'error');
+        }
+        return;
+      }
+      state = DraftState.setBanSlot(state, playerIndex, banRound, pokemon, poolData);
+    } else {
+      const { playerIndex, slotIndex } = slotPickerContext;
+      state = DraftState.setTeamSlot(state, playerIndex, slotIndex, pokemon, poolData);
+    }
     closeSlotPicker();
     persist();
     renderAll();
@@ -1190,10 +1303,15 @@
   function clearSlotPokemon() {
     if (!slotPickerContext) return;
 
-    const { playerIndex, slotIndex } = slotPickerContext;
-    if (!DraftState.canClearTeamSlot(state, playerIndex, slotIndex)) return;
-
-    state = DraftState.setTeamSlot(state, playerIndex, slotIndex, null, poolData);
+    if (slotPickerContext.type === 'ban') {
+      const { playerIndex, banRound } = slotPickerContext;
+      if (!DraftState.canClearBanSlot(state, playerIndex, banRound)) return;
+      state = DraftState.setBanSlot(state, playerIndex, banRound, null, poolData);
+    } else {
+      const { playerIndex, slotIndex } = slotPickerContext;
+      if (!DraftState.canClearTeamSlot(state, playerIndex, slotIndex)) return;
+      state = DraftState.setTeamSlot(state, playerIndex, slotIndex, null, poolData);
+    }
     closeSlotPicker();
     persist();
     renderAll();
@@ -1211,12 +1329,40 @@
     }
 
     const playerName = state.players[playerIndex]?.name || `Joueur ${playerIndex + 1}`;
-    slotPickerContext = { playerIndex, slotIndex };
+    slotPickerContext = { type: 'team', playerIndex, slotIndex };
     $('#slot-picker-title').textContent = `Emplacement ${slotIndex + 1} — ${playerName}`;
     const searchInput = $('#slot-picker-search');
     if (searchInput) searchInput.value = '';
     renderSlotPickerResults();
-    $('#slot-picker-overlay')?.classList.remove('hidden');
+    const overlay = $('#slot-picker-overlay');
+    overlay?.classList.remove('modal-overlay--ban-picker');
+    overlay?.classList.remove('hidden');
+    searchInput?.focus();
+  }
+
+  function openBanPicker(playerIndex, banRound) {
+    if (isStreamMode()) return;
+    if (!poolData) {
+      showMessage('Chargement du Pokédex…', 'error');
+      return;
+    }
+    if (!DraftState.canEditBanSlot(state, playerIndex, banRound)) {
+      showMessage('Ce ban ne peut pas être modifié pour le moment.', 'error');
+      return;
+    }
+
+    const playerName = state.players[playerIndex]?.name || `Joueur ${playerIndex + 1}`;
+    const kind = DraftState.getRequiredBanKindForSlot(state, playerIndex, banRound);
+    const kindHint =
+      kind === 'mega' ? ' (Mega requis)' : kind === 'pokemon' ? ' (Pokémon requis)' : '';
+    slotPickerContext = { type: 'ban', playerIndex, banRound };
+    $('#slot-picker-title').textContent = `Ban tour ${banRound} — ${playerName}${kindHint}`;
+    const searchInput = $('#slot-picker-search');
+    if (searchInput) searchInput.value = '';
+    renderSlotPickerResults();
+    const overlay = $('#slot-picker-overlay');
+    overlay?.classList.add('modal-overlay--ban-picker');
+    overlay?.classList.remove('hidden');
     searchInput?.focus();
   }
 
@@ -1524,6 +1670,22 @@
       if (!slot) return;
       e.preventDefault();
       openSlotPicker(Number(slot.dataset.player), Number(slot.dataset.slot));
+    });
+
+    $('#dashboard-bans-board')?.addEventListener('click', (e) => {
+      if (isStreamMode()) return;
+      const slot = e.target.closest('.ban-slot--clickable');
+      if (!slot) return;
+      openBanPicker(Number(slot.dataset.banPlayer), Number(slot.dataset.banRound));
+    });
+
+    $('#dashboard-bans-board')?.addEventListener('keydown', (e) => {
+      if (isStreamMode()) return;
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const slot = e.target.closest('.ban-slot--clickable');
+      if (!slot) return;
+      e.preventDefault();
+      openBanPicker(Number(slot.dataset.banPlayer), Number(slot.dataset.banRound));
     });
 
     initPlayerDragDrop();

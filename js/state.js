@@ -474,11 +474,9 @@
 
       teams: teamSlot,
 
-      usedSpecies: isMegaPick
+      usedSpecies: state.usedSpecies.includes(pokemon.speciesKey)
         ? state.usedSpecies
-        : state.usedSpecies.includes(pokemon.speciesKey)
-          ? state.usedSpecies
-          : [...state.usedSpecies, pokemon.speciesKey],
+        : [...state.usedSpecies, pokemon.speciesKey],
 
       bannedPokemonIds: mergeBlockedPokemonIds(
 
@@ -606,27 +604,21 @@
 
 
 
-      const isMegaPick = last.isMega === true;
-
       const usedSpecies = [...state.usedSpecies];
 
-      if (!isMegaPick) {
+      const stillUsed = teams.flat().some((p) => p.speciesKey === last.speciesKey);
 
-        const stillUsed = teams.flat().some((p) => p.speciesKey === last.speciesKey);
+      const stillBanned = state.bans.some(
 
-        const stillBanned = state.bans.some(
+        (b) => b.isMega !== true && b.speciesKey === last.speciesKey
 
-          (b) => b.isMega !== true && b.speciesKey === last.speciesKey
+      );
 
-        );
+      if (!stillUsed && !stillBanned) {
 
-        if (!stillUsed && !stillBanned) {
+        const idx = usedSpecies.indexOf(last.speciesKey);
 
-          const idx = usedSpecies.indexOf(last.speciesKey);
-
-          if (idx >= 0) usedSpecies.splice(idx, 1);
-
-        }
+        if (idx >= 0) usedSpecies.splice(idx, 1);
 
       }
 
@@ -678,7 +670,55 @@
 
       next.teams = teams;
 
-      next.usedSpecies = rebuildUsedSpecies({ ...state, teams });
+      const snap = { ...state, teams };
+
+      next.usedSpecies = rebuildUsedSpecies(snap);
+
+      next.bannedPokemonIds = rebuildBannedPokemonIds(snap);
+
+    } else if (last.kind === 'banEdit') {
+
+      let bans = [...state.bans];
+
+      const slot = findBanSlot(state, last.playerIndex, last.banRound);
+
+
+
+      if (last.cleared) {
+
+        if (last.previousBan) {
+
+          bans.push(last.previousBan);
+
+        }
+
+      } else if (last.previousBan) {
+
+        if (slot) bans[slot.index] = last.previousBan;
+
+      } else if (slot) {
+
+        bans = bans.filter((_, i) => i !== slot.index);
+
+      }
+
+
+
+      const totalBansDone = bans.length;
+
+      const snap = { ...state, bans };
+
+      next.bans = bans;
+
+      next.totalBansDone = totalBansDone;
+
+      next.usedSpecies = rebuildUsedSpecies(snap);
+
+      next.bannedPokemonIds = rebuildBannedPokemonIds(snap);
+
+      next.phase = resolvePhaseAfterUndo(totalBansDone, state.totalPicksDone);
+
+      if (totalBansDone === 0) next.draftStartedAt = null;
 
     }
 
@@ -819,8 +859,6 @@
     const fromTeams = (state.teams || [])
 
       .flat()
-
-      .filter((p) => !global.PokemonSpecies.isMegaPickRef(p))
 
       .map((p) => p.speciesKey)
 
@@ -1147,6 +1185,356 @@
     const team = state.teams[playerIndex] || [];
 
     return !!team[slotIndex];
+
+  }
+
+
+
+  function findBanSlot(state, playerIndex, banRound) {
+
+    const bans = state.bans || [];
+
+    for (let i = 0; i < bans.length; i++) {
+
+      const pi =
+
+        typeof bans[i].playerIndex === 'number' ? bans[i].playerIndex : getBanPlayerIndex(i);
+
+      const round = getBanRound(i);
+
+      if (pi === playerIndex && round === banRound) {
+
+        return { index: i, ban: bans[i] };
+
+      }
+
+    }
+
+    return null;
+
+  }
+
+
+
+  function getRequiredBanKindForSlot(state, playerIndex, banRound) {
+
+    if (banRound === 1) return 'any';
+
+    const first = findBanSlot(state, playerIndex, 1);
+
+    if (!first) return 'none';
+
+    return first.ban.isMega === true ? 'pokemon' : 'mega';
+
+  }
+
+
+
+  function getBanAvailability(state, pool, options) {
+
+    const opts = options || {};
+
+    let bans = [...(state.bans || [])];
+
+    if (opts.excludeBan) {
+
+      const { playerIndex, banRound } = opts.excludeBan;
+
+      bans = bans.filter((ban, i) => {
+
+        const pi =
+
+          typeof ban.playerIndex === 'number' ? ban.playerIndex : getBanPlayerIndex(i);
+
+        const round = getBanRound(i);
+
+        return !(pi === playerIndex && round === banRound);
+
+      });
+
+    }
+
+    const snapshot = { ...state, bans };
+
+    return {
+
+      usedSpecies: rebuildUsedSpecies(snapshot),
+
+      bannedPokemonIds: rebuildBannedPokemonIds(snapshot, pool),
+
+    };
+
+  }
+
+
+
+  function buildBanEntry(playerIndex, pokemon, pool) {
+
+    const isMegaBan = pokemon.isMega === true;
+
+    const blockedPokemonIds = isMegaBan
+
+      ? global.PokemonSpecies.getLinkedMegaIds(pokemon, pool)
+
+      : undefined;
+
+    return {
+
+      playerIndex,
+
+      pokemonId: pokemon.id,
+
+      speciesKey: pokemon.speciesKey,
+
+      isMega: isMegaBan,
+
+      blockedPokemonIds: isMegaBan ? blockedPokemonIds : undefined,
+
+      pokemon: {
+
+        id: pokemon.id,
+
+        name: pokemon.name,
+
+        spriteUrl: pokemon.spriteUrl,
+
+        pokedexId: pokemon.pokedexId,
+
+      },
+
+    };
+
+  }
+
+
+
+  function canPickForBanSlot(pokemon, state, pool, playerIndex, banRound) {
+
+    if (!pokemon) return false;
+
+    const availability = getBanAvailability(state, pool, {
+
+      excludeBan: { playerIndex, banRound },
+
+    });
+
+    if (!global.PokemonSpecies.isSelectable(pokemon, availability)) return false;
+
+    const kind = getRequiredBanKindForSlot(state, playerIndex, banRound);
+
+    const isMega = pokemon.isMega === true;
+
+    if (kind === 'none') return false;
+
+    if (kind === 'mega' && !isMega) return false;
+
+    if (kind === 'pokemon' && isMega) return false;
+
+    if (banRound === 1) {
+
+      const round2 = findBanSlot(state, playerIndex, 2);
+
+      if (round2 && isMega === (round2.ban.isMega === true)) return false;
+
+    }
+
+    return true;
+
+  }
+
+
+
+  function canEditBanSlot(state, playerIndex, banRound) {
+
+    if (playerIndex < 0 || playerIndex >= PLAYER_COUNT) return false;
+
+    if (banRound < 1 || banRound > BANS_PER_PLAYER) return false;
+
+    if (state.phase === PHASE.SETUP) return false;
+
+    if (findBanSlot(state, playerIndex, banRound)) return true;
+
+    if (state.phase === PHASE.BAN && state.totalBansDone < TOTAL_BANS) {
+
+      const nextPlayer = getBanPlayerIndex(state.totalBansDone);
+
+      const nextRound = getBanRound(state.totalBansDone);
+
+      return playerIndex === nextPlayer && banRound === nextRound;
+
+    }
+
+    return false;
+
+  }
+
+
+
+  function canClearBanSlot(state, playerIndex, banRound) {
+
+    const slot = findBanSlot(state, playerIndex, banRound);
+
+    if (!slot) return false;
+
+    return slot.index === (state.bans || []).length - 1;
+
+  }
+
+
+
+  function setBanSlot(state, playerIndex, banRound, pokemon, pool) {
+
+    if (playerIndex < 0 || playerIndex >= PLAYER_COUNT) return state;
+
+    if (banRound < 1 || banRound > BANS_PER_PLAYER) return state;
+
+
+
+    const existing = findBanSlot(state, playerIndex, banRound);
+
+
+
+    if (pokemon === null) {
+
+      if (!canClearBanSlot(state, playerIndex, banRound)) return state;
+
+      const previousBan = { ...existing.ban };
+
+      const bans = state.bans.filter((_, i) => i !== existing.index);
+
+      const totalBansDone = bans.length;
+
+      const clearedState = { ...state, bans, totalBansDone };
+
+      return {
+
+        ...clearedState,
+
+        usedSpecies: rebuildUsedSpecies(clearedState),
+
+        bannedPokemonIds: rebuildBannedPokemonIds(clearedState, pool),
+
+        phase: resolvePhaseAfterUndo(totalBansDone, state.totalPicksDone),
+
+        selectedPokemonId: null,
+
+        draftStartedAt: totalBansDone === 0 ? null : state.draftStartedAt,
+
+        actionHistory: [
+
+          ...state.actionHistory,
+
+          {
+
+            kind: 'banEdit',
+
+            playerIndex,
+
+            banRound,
+
+            previousBan,
+
+            cleared: true,
+
+          },
+
+        ],
+
+      };
+
+    }
+
+
+
+    if (!pokemon) return state;
+
+    if (!canPickForBanSlot(pokemon, state, pool, playerIndex, banRound)) return state;
+
+
+
+    const previousBan = existing ? { ...existing.ban } : null;
+
+    const entry = buildBanEntry(playerIndex, pokemon, pool);
+
+
+
+    let bans = [...(state.bans || [])];
+
+    let totalBansDone = state.totalBansDone;
+
+
+
+    if (existing) {
+
+      bans[existing.index] = entry;
+
+    } else {
+
+      if (!canEditBanSlot(state, playerIndex, banRound)) return state;
+
+      bans.push(entry);
+
+      totalBansDone = bans.length;
+
+    }
+
+
+
+    const nextState = { ...state, bans, totalBansDone };
+
+    let phase = state.phase;
+
+    if (phase === PHASE.BAN && totalBansDone >= TOTAL_BANS) {
+
+      phase = PHASE.DRAFT;
+
+    } else if (phase === PHASE.DRAFT && totalBansDone < TOTAL_BANS) {
+
+      phase = PHASE.BAN;
+
+    }
+
+
+
+    const draftStartedAt =
+
+      state.draftStartedAt || (bans.length > 0 ? new Date().toISOString() : null);
+
+
+
+    return {
+
+      ...nextState,
+
+      phase,
+
+      draftStartedAt,
+
+      usedSpecies: rebuildUsedSpecies(nextState),
+
+      bannedPokemonIds: rebuildBannedPokemonIds(nextState, pool),
+
+      selectedPokemonId: null,
+
+      actionHistory: [
+
+        ...state.actionHistory,
+
+        {
+
+          kind: 'banEdit',
+
+          playerIndex,
+
+          banRound,
+
+          previousBan,
+
+        },
+
+      ],
+
+    };
 
   }
 
@@ -1582,6 +1970,20 @@
     canEditTeamSlot,
 
     canClearTeamSlot,
+
+    findBanSlot,
+
+    getRequiredBanKindForSlot,
+
+    getBanAvailability,
+
+    canPickForBanSlot,
+
+    canEditBanSlot,
+
+    canClearBanSlot,
+
+    setBanSlot,
 
     EXPORT_FORMAT_VERSION,
 

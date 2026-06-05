@@ -501,8 +501,11 @@
       { id: opts.id, pokemonId: opts.pokemonId, spriteUrl, isMega: opts.isMega },
       opts.poolData
     );
-    if (!mega) return img;
     const wrapClass = opts.wrapClass || 'sprite-slot-wrap';
+    if (!mega && !opts.alwaysWrap) return img;
+    if (!mega) {
+      return `<div class="${wrapClass}">${img}</div>`;
+    }
     const labelClass = opts.megaLabelClass || 'sprite-mega-label';
     return `<div class="${wrapClass}">${img}<span class="${labelClass}">Mega</span></div>`;
   }
