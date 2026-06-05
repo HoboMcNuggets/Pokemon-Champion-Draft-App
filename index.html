@@ -254,6 +254,17 @@
         </div>
       </section>
 
+      <section class="settings-section" aria-labelledby="settings-pool-heading">
+        <h3 id="settings-pool-heading" class="settings-section__title">Pool actif</h3>
+        <p class="settings-section__hint">Gérer les Pokémon éligibles au draft. Modifiable uniquement avant le démarrage du draft (onglet Pokédex ou import ci-dessous).</p>
+        <div class="settings-draft-actions">
+          <button type="button" class="btn btn-secondary" id="btn-export-active-profile">Exporter le profil actif</button>
+          <button type="button" class="btn btn-secondary" id="btn-import-active-profile">Importer un profil</button>
+          <input type="file" id="active-profile-import-file" class="hidden" accept=".json,application/json">
+          <button type="button" class="btn btn-secondary" id="btn-reset-active-profile">Restaurer les actifs…</button>
+        </div>
+      </section>
+
       <section class="settings-section" aria-labelledby="settings-draft-heading">
         <h3 id="settings-draft-heading" class="settings-section__title">Draft</h3>
         <div class="settings-draft-actions">
@@ -320,6 +331,8 @@
   <script src="js/species.js"></script>
 
   <script src="js/pool-import.js"></script>
+
+  <script src="js/pool-active.js"></script>
 
   <script src="js/state.js"></script>
 

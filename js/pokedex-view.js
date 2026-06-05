@@ -81,7 +81,35 @@
     return list;
   }
 
-  function renderTable(container, list, selectedId) {
+  function renderActiveStatusCell(pokemon, canEditActive) {
+    if (canEditActive) {
+      const checked = pokemon.enabled ? ' checked' : '';
+      const label = pokemon.enabled ? 'Actif' : 'Inactif';
+      return `<td class="pokedex-table__status">
+        <label class="pokedex-active-toggle" title="Activer ou désactiver ce Pokémon">
+          <input type="checkbox" class="pokedex-active-toggle__input" data-pokemon-id="${escapeAttr(pokemon.id)}"${checked} aria-label="${escapeAttr(label)} — ${escapeAttr(pokemon.name)}">
+          <span class="pokedex-active-toggle__track" aria-hidden="true"></span>
+          <span class="pokedex-active-toggle__label">${label}</span>
+        </label>
+      </td>`;
+    }
+    const statutCol = pokemon.enabled ? 'Actif' : 'Inactif';
+    return `<td class="pokedex-table__status pokedex-table__status--readonly" title="Modifiable uniquement avant le démarrage du draft">${statutCol}</td>`;
+  }
+
+  function renderActiveToggleButton(pokemon, canEditActive) {
+    if (!canEditActive) {
+      const statut = pokemon.enabled ? 'Actif' : 'Inactif';
+      return `<p class="pokedex-detail__status pokedex-detail__status--readonly" title="Modifiable uniquement avant le démarrage du draft">Statut : ${statut}</p>`;
+    }
+    const label = pokemon.enabled ? 'Désactiver' : 'Activer';
+    const actionClass = pokemon.enabled
+      ? 'pokedex-detail__toggle--deactivate'
+      : 'pokedex-detail__toggle--activate';
+    return `<button type="button" class="pokedex-detail__toggle ${actionClass}" data-pokemon-id="${escapeAttr(pokemon.id)}" aria-pressed="${pokemon.enabled ? 'true' : 'false'}">${label}</button>`;
+  }
+
+  function renderTable(container, list, selectedId, canEditActive) {
     const rows = list
       .map((p) => {
         const rowClass = [
@@ -91,7 +119,6 @@
           .filter(Boolean)
           .join(' ');
         const bst = global.PokemonSpecies.getBaseTotal(p);
-        const statutCol = p.enabled ? 'Actif' : 'Inactif';
         const megaCol = p.isMega ? 'Oui' : '—';
         return `<tr class="${rowClass}" data-pokemon-id="${escapeAttr(p.id)}">
           <td>${escapeHtml(p.pokedexId)}</td>
@@ -107,7 +134,7 @@
           <td>${p.spAtk}</td>
           <td>${p.spDef}</td>
           <td>${p.speed}</td>
-          <td>${statutCol}</td>
+          ${renderActiveStatusCell(p, canEditActive)}
           <td>${megaCol}</td>
         </tr>`;
       })
@@ -147,7 +174,7 @@
       .replace(/>/g, '&gt;');
   }
 
-  function renderDetailPanel(pokemon) {
+  function renderDetailPanel(pokemon, canEditActive) {
     if (!pokemon) return '';
     const bst = global.PokemonSpecies.getBaseTotal(pokemon);
     const statRows = [
@@ -189,6 +216,9 @@
         <div class="pokedex-detail__abilities">
           <h4>Abilities</h4>
           ${abilitiesHtml || '<p class="pokedex-detail__empty">Aucune habileté.</p>'}
+        </div>
+        <div class="pokedex-detail__pool">
+          ${renderActiveToggleButton(pokemon, canEditActive)}
         </div>
       </div>`;
   }
@@ -248,8 +278,9 @@
     }
   }
 
-  function render(root, poolData, uiState) {
+  function render(root, poolData, uiState, options) {
     if (!root) return;
+    const canEditActive = options?.canEditActive === true;
     const pool = poolData?.pokemon || [];
     const headerEl = root.querySelector('.pokedex-header');
     const contentEl = root.querySelector('.pokedex-content');
@@ -294,10 +325,18 @@
       : null;
 
     contentEl.innerHTML = '<div class="pokedex-table-wrap"></div>';
-    renderTable(contentEl.querySelector('.pokedex-table-wrap'), list, selectedPokemon?.id || null);
+    renderTable(
+      contentEl.querySelector('.pokedex-table-wrap'),
+      list,
+      selectedPokemon?.id || null,
+      canEditActive
+    );
 
     if (selectedPokemon) {
-      contentEl.insertAdjacentHTML('beforeend', renderDetailPanel(selectedPokemon));
+      contentEl.insertAdjacentHTML(
+        'beforeend',
+        renderDetailPanel(selectedPokemon, canEditActive)
+      );
     }
   }
 
@@ -310,6 +349,17 @@
       if (e.target.id === 'pokedex-enabled-filter') onChange(e);
     });
     root.addEventListener('click', (e) => {
+      if (e.target.closest('.pokedex-active-toggle')) {
+        e.stopPropagation();
+        return;
+      }
+      const toggleBtn = e.target.closest('.pokedex-detail__toggle');
+      if (toggleBtn?.dataset.pokemonId) {
+        e.preventDefault();
+        e.stopPropagation();
+        onChange(e, { toggleId: toggleBtn.dataset.pokemonId });
+        return;
+      }
       const th = e.target.closest('th.sortable');
       if (th) {
         onChange(e, { sortKey: th.dataset.sort });
@@ -318,6 +368,13 @@
       const row = e.target.closest('tr[data-pokemon-id]');
       if (row) {
         onChange(e, { pokemonId: row.dataset.pokemonId });
+      }
+    });
+    root.addEventListener('change', (e) => {
+      const toggle = e.target.closest('.pokedex-active-toggle__input');
+      if (toggle?.dataset.pokemonId) {
+        e.stopPropagation();
+        onChange(e, { toggleId: toggle.dataset.pokemonId });
       }
     });
   }

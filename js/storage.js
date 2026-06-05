@@ -4,6 +4,7 @@
 (function (global) {
   const DRAFT_KEY = 'pokemonDraft.v1';
   const POOL_KEY = 'pokemonDraft.pool';
+  const ACTIVE_PROFILE_KEY = 'pokemonDraft.activeProfile';
   const VIEW_MODE_KEY = 'pokemonDraft.viewMode';
   const THEME_KEY = 'pokemonDraft.theme';
   const TIMER_DURATION_KEY = 'pokemonDraft.timerDurationSec';
@@ -92,6 +93,31 @@
     localStorage.removeItem(POOL_KEY);
   }
 
+  function saveActiveProfile(profile) {
+    try {
+      localStorage.setItem(ACTIVE_PROFILE_KEY, JSON.stringify(profile));
+      return true;
+    } catch (e) {
+      console.warn('Sauvegarde profil actif impossible', e);
+      return false;
+    }
+  }
+
+  function loadActiveProfile() {
+    try {
+      const raw = localStorage.getItem(ACTIVE_PROFILE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) {
+      console.warn('Chargement profil actif impossible', e);
+      return null;
+    }
+  }
+
+  function clearActiveProfile() {
+    localStorage.removeItem(ACTIVE_PROFILE_KEY);
+  }
+
   function saveViewMode(mode) {
     try {
       localStorage.setItem(VIEW_MODE_KEY, mode);
@@ -159,6 +185,9 @@
     savePool,
     loadPool,
     clearPool,
+    saveActiveProfile,
+    loadActiveProfile,
+    clearActiveProfile,
     saveViewMode,
     loadViewMode,
     saveTheme,

@@ -135,6 +135,109 @@
   opacity: 0.5;
 }
 
+.pokedex-table__status {
+  white-space: nowrap;
+}
+
+.pokedex-table__status--readonly {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.pokedex-active-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pokedex-active-toggle__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.pokedex-active-toggle__track {
+  position: relative;
+  width: 2.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 35%, var(--bg-card));
+  border: 1px solid var(--border);
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.pokedex-active-toggle__track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.25rem - 6px);
+  height: calc(1.25rem - 6px);
+  border-radius: 50%;
+  background: var(--text);
+  transition: transform 0.15s ease;
+}
+
+.pokedex-active-toggle__input:checked + .pokedex-active-toggle__track {
+  background: color-mix(in srgb, var(--accent) 70%, var(--bg-card));
+  border-color: var(--accent);
+}
+
+.pokedex-active-toggle__input:checked + .pokedex-active-toggle__track::after {
+  transform: translateX(1rem);
+}
+
+.pokedex-active-toggle__input:focus-visible + .pokedex-active-toggle__track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pokedex-active-toggle__label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.pokedex-detail__pool {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.pokedex-detail__toggle {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pokedex-detail__toggle--activate {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pokedex-detail__toggle--deactivate {
+  border-color: color-mix(in srgb, var(--danger, #c44) 60%, var(--border));
+  color: var(--danger, #c44);
+}
+
+.pokedex-detail__toggle:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-card));
+}
+
+.pokedex-detail__status--readonly {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
 .pokedex-table tbody tr {
   cursor: pointer;
 }

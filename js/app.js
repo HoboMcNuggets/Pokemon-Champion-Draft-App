@@ -10,6 +10,7 @@
   const { TypeDisplay } = window;
   const { PokedexView } = window;
   const { StreamView } = window;
+  const { PoolActive } = window;
 
   const POKEDEX_URL = 'data/pokemon-pokedex.json';
   /** Seuil sous lequel le cache localStorage est considéré comme un ancien pool partiel. */
@@ -76,6 +77,178 @@
     renderAll();
   }
 
+  function initializePoolActiveState(pool) {
+    if (!pool || !PoolActive) return;
+    PoolActive.captureBaseline(pool);
+    const saved = DraftStorage.loadActiveProfile();
+    if (!saved?.activeIds?.length) return;
+    const check = PoolActive.validateStoredProfile(saved, pool);
+    if (check.ok) {
+      PoolActive.applyProfile(pool, saved.activeIds);
+    } else {
+      DraftStorage.clearActiveProfile();
+    }
+  }
+
+  function loadPoolIntoApp(pool) {
+    initializePoolActiveState(pool);
+    setPool(pool);
+  }
+
+  function persistActiveProfile() {
+    if (!poolData || !PoolActive) return;
+    if (PoolActive.isBaselineProfile(poolData)) {
+      DraftStorage.clearActiveProfile();
+      return;
+    }
+    DraftStorage.saveActiveProfile(PoolActive.createStorageProfile(poolData));
+  }
+
+  function canEditActivePool() {
+    return state.phase === PHASE.SETUP && Boolean(poolData?.pokemon?.length);
+  }
+
+  function getPoolLeagueLabel() {
+    return poolData?.leagueName?.trim() || 'Champions';
+  }
+
+  function getRestoreActiveLabel() {
+    return `Restaurer les actifs ${getPoolLeagueLabel()}`;
+  }
+
+  function syncActivePoolSettingsFields() {
+    const canEdit = canEditActivePool();
+    const disabledTitle = 'Modifiable uniquement avant le démarrage du draft.';
+    const importBtn = $('#btn-import-active-profile');
+    const resetBtn = $('#btn-reset-active-profile');
+
+    if (importBtn) {
+      importBtn.disabled = !canEdit;
+      importBtn.title = canEdit ? '' : disabledTitle;
+    }
+    if (resetBtn) {
+      resetBtn.disabled = !canEdit;
+      resetBtn.textContent = getRestoreActiveLabel();
+      resetBtn.title = canEdit ? '' : disabledTitle;
+    }
+  }
+
+  function toggleActivePokemon(pokemonId) {
+    if (!canEditActivePool()) {
+      showMessage('Le pool actif est modifiable uniquement avant le démarrage du draft.', 'error');
+      renderPokedex();
+      return;
+    }
+    const result = PoolActive.togglePokemon(poolData, pokemonId);
+    if (!result.ok) {
+      showMessage(result.message, 'error');
+      renderPokedex();
+      return;
+    }
+    persistActiveProfile();
+    renderAll();
+  }
+
+  function applyImportedActiveProfile(activeIds, meta) {
+    const applied = PoolActive.applyActiveIds(poolData, activeIds);
+    if (!applied.ok) {
+      showMessage(applied.errors.join(' '), 'error');
+      return;
+    }
+    persistActiveProfile();
+    renderAll();
+    const count = PoolActive.countActive(poolData);
+    const parts = [`Profil actif appliqué (${count} Pokémon actifs).`];
+    if (meta?.exportedAt) {
+      parts.push(`Export du ${new Date(meta.exportedAt).toLocaleString('fr-FR')}.`);
+    }
+    showMessage(parts.join(' '), 'success');
+  }
+
+  function exportActiveProfile() {
+    if (!poolData) {
+      showMessage('Pokédex non chargé.', 'error');
+      return;
+    }
+    const payload = PoolActive.createExportPayload(poolData, {
+      leagueName: poolData.leagueName,
+    });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'pool-active-profile.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showMessage('Profil actif exporté.', 'success');
+  }
+
+  function importActiveProfileFromText(text) {
+    if (!canEditActivePool()) {
+      showMessage('Le pool actif est modifiable uniquement avant le démarrage du draft.', 'error');
+      return;
+    }
+    if (!poolData) {
+      showMessage('Pokédex non chargé.', 'error');
+      return;
+    }
+    const parsed = PoolActive.parseImportPayload(text);
+    if (!parsed.ok) {
+      showMessage(parsed.errors.join(' '), 'error');
+      return;
+    }
+    const poolCheck = PoolActive.validateImportAgainstPool(parsed.payload, poolData);
+    if (!poolCheck.ok) {
+      showMessage(poolCheck.errors.join(' '), 'error');
+      return;
+    }
+    const warnings = [...(parsed.warnings || []), ...(poolCheck.warnings || [])];
+    const warningText = warnings.length ? `\n\n${warnings.join('\n')}` : '';
+    const exportedAt = parsed.payload.exportedAt
+      ? new Date(parsed.payload.exportedAt).toLocaleString('fr-FR')
+      : null;
+    const body = exportedAt
+      ? `Remplacer les Pokémon actifs par le profil exporté le ${exportedAt} (${parsed.payload.activeCount} actifs) ?${warningText}`
+      : `Remplacer les Pokémon actifs par ce profil (${parsed.payload.activeCount} actifs) ?${warningText}`;
+
+    showModal('Importer le profil actif', body, () => {
+      applyImportedActiveProfile(parsed.payload.activeIds, parsed.payload);
+    });
+  }
+
+  function importActiveProfileFromFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      importActiveProfileFromText(String(reader.result || ''));
+    };
+    reader.onerror = () => {
+      showMessage('Impossible de lire le fichier.', 'error');
+    };
+    reader.readAsText(file);
+  }
+
+  function resetActiveProfileToBaseline() {
+    if (!canEditActivePool()) {
+      showMessage('Le pool actif est modifiable uniquement avant le démarrage du draft.', 'error');
+      return;
+    }
+    if (!poolData) {
+      showMessage('Pokédex non chargé.', 'error');
+      return;
+    }
+    const leagueLabel = getPoolLeagueLabel();
+    showModal(
+      getRestoreActiveLabel(),
+      `Rétablir la liste des Pokémon actifs issue de ${leagueLabel} ? Vos modifications seront perdues.`,
+      () => {
+        PoolActive.restoreBaseline(poolData);
+        DraftStorage.clearActiveProfile();
+        renderAll();
+        showMessage(`Actifs ${leagueLabel} restaurés.`, 'success');
+      }
+    );
+  }
+
   function isPokedexTabActive() {
     const panel = document.getElementById('panel-pokedex');
     return panel?.classList.contains('active') ?? false;
@@ -100,6 +273,7 @@
     }
     if (tabId === 'settings') {
       syncTimerConfigFields();
+      syncActivePoolSettingsFields();
     }
   }
 
@@ -108,6 +282,7 @@
     if (savedPool) {
       const v = PoolImport.validatePoolData(savedPool);
       if (v.ok && isFullPokedex(v.pool)) {
+        initializePoolActiveState(v.pool);
         poolData = v.pool;
       } else {
         DraftStorage.clearPool();
@@ -115,7 +290,10 @@
     }
     if (!poolData && window.DEFAULT_EXAMPLE_POOL) {
       const v = PoolImport.validatePoolData(window.DEFAULT_EXAMPLE_POOL);
-      if (v.ok) poolData = v.pool;
+      if (v.ok) {
+        initializePoolActiveState(v.pool);
+        poolData = v.pool;
+      }
     }
     const savedDraft = DraftStorage.loadDraft();
     if (savedDraft) state = DraftState.deserialize(savedDraft);
@@ -644,7 +822,9 @@
 
   function renderPokedex() {
     const root = $('#pokedex-root');
-    PokedexView.render(root, poolData, uiState);
+    PokedexView.render(root, poolData, uiState, {
+      canEditActive: canEditActivePool(),
+    });
   }
 
   function isStreamMode() {
@@ -806,6 +986,7 @@
     if (StreamView) StreamView.render(state, poolData);
     renderDashboardRecap();
     placeViewModeSwitch();
+    syncActivePoolSettingsFields();
   }
 
   function selectSpotlightPokemon(id) {
@@ -1163,7 +1344,7 @@
       console.error('Pokédex embarqué invalide :', result.errors);
       return false;
     }
-    setPool(result.pool);
+    loadPoolIntoApp(result.pool);
     return true;
   }
 
@@ -1179,7 +1360,7 @@
           showMessage(result.errors.join(' '), 'error');
           return false;
         }
-        setPool(result.pool);
+        loadPoolIntoApp(result.pool);
         if (successMessage) {
           showMessage(successMessage, 'success');
         }
@@ -1191,6 +1372,10 @@
   function onPokedexFilterEvent(e, extra) {
     const f = uiState.pokedexFilters;
 
+    if (extra?.toggleId) {
+      toggleActivePokemon(extra.toggleId);
+      return;
+    }
     if (extra?.pokemonId) {
       uiState.pokedexSelectedId =
         uiState.pokedexSelectedId === extra.pokemonId ? null : extra.pokemonId;
@@ -1271,6 +1456,20 @@
       const file = e.target.files?.[0];
       if (file) importDraftFromFile(file);
     });
+
+    $('#btn-export-active-profile')?.addEventListener('click', exportActiveProfile);
+    $('#btn-import-active-profile')?.addEventListener('click', () => {
+      const input = $('#active-profile-import-file');
+      if (input) {
+        input.value = '';
+        input.click();
+      }
+    });
+    $('#active-profile-import-file')?.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) importActiveProfileFromFile(file);
+    });
+    $('#btn-reset-active-profile')?.addEventListener('click', resetActiveProfileToBaseline);
 
     $('#pokemon-search').addEventListener('input', renderSearch);
 
@@ -1358,8 +1557,7 @@
       if (!poolData && window.DEFAULT_EXAMPLE_POOL) {
         const result = PoolImport.validatePoolData(window.DEFAULT_EXAMPLE_POOL);
         if (result.ok) {
-          poolData = result.pool;
-          renderAll();
+          loadPoolIntoApp(result.pool);
         }
       }
     }
