@@ -363,9 +363,14 @@
 
     if (state.selectedPokemonId && poolData) {
       const selected = DraftState.findPokemon(poolData, state.selectedPokemonId);
+      const isBannedSpotlight =
+        state.phase === PHASE.BAN &&
+        (state.bans || []).some((b) => b.pokemonId === state.selectedPokemonId);
       const stillValid =
         selected &&
-        (state.phase !== PHASE.BAN || DraftState.canBan(selected, state));
+        (state.phase !== PHASE.BAN ||
+          DraftState.canBan(selected, state) ||
+          isBannedSpotlight);
       if (!stillValid) {
         state = { ...state, selectedPokemonId: null };
       }
