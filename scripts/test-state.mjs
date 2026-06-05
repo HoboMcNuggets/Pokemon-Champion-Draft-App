@@ -237,6 +237,54 @@ assert(state.phase === PHASE.DRAFT, 'undo pick depuis complete → draft');
 
 
 
+let swapState = DraftState.startDraft(DraftState.createInitialState());
+swapState = DraftState.setPlayerNames(swapState, [
+  { slot: 0, name: 'J1' },
+  { slot: 1, name: 'J2' },
+  { slot: 2, name: 'J3' },
+  { slot: 3, name: 'J4' },
+  { slot: 4, name: 'J5' },
+  { slot: 5, name: 'J6' },
+  { slot: 6, name: 'J7' },
+  { slot: 7, name: 'J8' },
+]);
+const swapBan1 = pool.pokemon.find((p) => p.enabled && PokemonSpecies.isSelectable(p, swapState));
+swapState = DraftState.applyBan(swapState, swapBan1);
+const swapBan2 = pool.pokemon.find((p) => p.enabled && PokemonSpecies.isSelectable(p, swapState));
+swapState = DraftState.applyBan(swapState, swapBan2);
+assert(swapState.bans[1].playerIndex === 1, 'ban 1 attribué joueur 1 avant swap');
+const historyLenBeforeSwap = swapState.actionHistory.length;
+assert(!DraftState.canSwapPlayerSlots(swapState, 1, 1), 'canSwap refuse même index');
+assert(DraftState.canSwapPlayerSlots(swapState, 1, 7), 'canSwap accepte indices distincts');
+swapState = DraftState.swapPlayerSlots(swapState, 1, 7);
+assert(swapState.players[1].name === 'J8', 'swap : slot 1 a nom J8');
+assert(swapState.players[7].name === 'J2', 'swap : slot 7 a nom J2');
+assert(swapState.bans[1].playerIndex === 7, 'ban de J2 remappé vers slot 7');
+assert(swapState.actionHistory.length === historyLenBeforeSwap, 'swap n\'ajoute pas à actionHistory');
+assert(swapState.actionHistory[1].playerIndex === 7, 'history ban remappé après swap');
+
+let activeSwapState = DraftState.startDraft(DraftState.createInitialState());
+activeSwapState = DraftState.setPlayerNames(
+  activeSwapState,
+  Array.from({ length: 8 }, (_, i) => ({ slot: i, name: `Joueur ${i + 1}` }))
+);
+activeSwapState = DraftState.applyBan(activeSwapState, swapBan1);
+assert(DraftState.getActivePlayerIndex(activeSwapState) === 1, 'actif slot 1 avant swap');
+activeSwapState = DraftState.swapPlayerSlots(activeSwapState, 1, 7);
+assert(DraftState.getActivePlayerIndex(activeSwapState) === 1, 'actif slot inchangé après swap');
+assert(activeSwapState.players[1].name === 'Joueur 8', 'Joueur 8 actif sur slot 1 après swap');
+
+let teamSwapState = DraftState.createInitialState();
+const teamPick1 = pool.pokemon.find((p) => p.id === '0003');
+const teamPick2 = pool.pokemon.find((p) => p.id === '0006');
+teamSwapState = DraftState.setTeamSlot(teamSwapState, 1, 0, teamPick1);
+teamSwapState = DraftState.setTeamSlot(teamSwapState, 7, 0, teamPick2);
+teamSwapState = DraftState.swapPlayerSlots(teamSwapState, 1, 7);
+assert(teamSwapState.teams[1][0].id === teamPick2.id, 'swap échange teams slot 1');
+assert(teamSwapState.teams[7][0].id === teamPick1.id, 'swap échange teams slot 7');
+
+
+
 const migrated = DraftState.deserialize({ phase: 'banPhase', bans: [], usedSpecies: [], totalBansDone: 0 });
 
 assert(migrated.phase === PHASE.SETUP, 'migration banPhase vide → setup');

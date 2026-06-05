@@ -641,6 +641,100 @@
 
 
 
+  function remapPlayerIndex(playerIndex, indexA, indexB) {
+
+    if (playerIndex === indexA) return indexB;
+
+    if (playerIndex === indexB) return indexA;
+
+    return playerIndex;
+
+  }
+
+
+
+  function canSwapPlayerSlots(state, indexA, indexB) {
+
+    if (indexA < 0 || indexA >= PLAYER_COUNT) return false;
+
+    if (indexB < 0 || indexB >= PLAYER_COUNT) return false;
+
+    return indexA !== indexB;
+
+  }
+
+
+
+  function swapPlayerSlots(state, indexA, indexB) {
+
+    if (!canSwapPlayerSlots(state, indexA, indexB)) return state;
+
+
+
+    const players = [...state.players];
+
+    const playerA = players[indexA];
+
+    players[indexA] = { ...players[indexB], slot: indexA };
+
+    players[indexB] = { ...playerA, slot: indexB };
+
+
+
+    const teams = state.teams.map((t) => [...t]);
+
+    const teamA = teams[indexA];
+
+    teams[indexA] = teams[indexB];
+
+    teams[indexB] = teamA;
+
+
+
+    const bans = (state.bans || []).map((ban) => ({
+
+      ...ban,
+
+      playerIndex: remapPlayerIndex(ban.playerIndex, indexA, indexB),
+
+    }));
+
+
+
+    const actionHistory = (state.actionHistory || []).map((entry) => {
+
+      if (typeof entry.playerIndex !== 'number') return entry;
+
+      return {
+
+        ...entry,
+
+        playerIndex: remapPlayerIndex(entry.playerIndex, indexA, indexB),
+
+      };
+
+    });
+
+
+
+    return {
+
+      ...state,
+
+      players,
+
+      teams,
+
+      bans,
+
+      actionHistory,
+
+    };
+
+  }
+
+
+
   function rebuildUsedSpecies(state) {
 
     const fromBans = (state.bans || [])
@@ -1277,6 +1371,10 @@
     resetDraft,
 
     setPlayerNames,
+
+    canSwapPlayerSlots,
+
+    swapPlayerSlots,
 
     setTeamSlot,
 

@@ -170,14 +170,22 @@
     return true;
   }
 
+  const PLAYER_DRAG_TYPE = 'application/x-pokemon-draft-player';
+
+  function renderPlayerDragHandle(playerIndex) {
+    return `<span class="player-card__drag-handle" draggable="true" data-player="${playerIndex}" role="button" tabindex="0" aria-label="Déplacer le joueur" title="Déplacer le joueur"><svg class="player-card__drag-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="4" cy="3" r="1.25" fill="currentColor"/><circle cx="10" cy="3" r="1.25" fill="currentColor"/><circle cx="4" cy="7" r="1.25" fill="currentColor"/><circle cx="10" cy="7" r="1.25" fill="currentColor"/><circle cx="4" cy="11" r="1.25" fill="currentColor"/><circle cx="10" cy="11" r="1.25" fill="currentColor"/></svg></span>`;
+  }
+
   function renderPlayersGrid() {
     const grid = $('#players-grid');
     const active = DraftState.getActivePlayerIndex(state);
+    const showDragHandle = !isStreamMode();
 
     grid.innerHTML = state.players
       .map((player, i) => {
         const isActive = i === active && isPlayingPhase();
         const team = state.teams[i] || [];
+        const dragHandle = showDragHandle ? renderPlayerDragHandle(i) : '';
 
         const slots = Array.from({ length: DraftState.PICKS_PER_PLAYER }, (_, s) => {
           const pick = team[s];
@@ -192,16 +200,81 @@
               megaLabelClass: 'sprite-mega-label sprite-mega-label--dashboard',
             })}</div>`;
           }
-          return `<div class="team-slot empty team-slot--clickable" ${slotAttrs}><img src="assets/pokemon-ball.png" alt=""></div>`;
+          return `<div class="team-slot empty team-slot--clickable" ${slotAttrs}><img src="assets/pokemon-ball.png" alt="" draggable="false"></div>`;
         }).join('');
 
         return `
         <article class="player-card ${isActive ? 'active' : ''}" data-player="${i}">
-          <button type="button" class="player-card__name" data-player="${i}" title="Renommer">${escapeHtml(player.name)}</button>
+          <div class="player-card__header">
+            <button type="button" class="player-card__name" data-player="${i}" title="Renommer">${escapeHtml(player.name)}</button>
+            ${dragHandle}
+          </div>
           <div class="player-card__team">${slots}</div>
         </article>`;
       })
       .join('');
+  }
+
+  function clearPlayerDragVisuals() {
+    $$('.player-card--dragging').forEach((el) => el.classList.remove('player-card--dragging'));
+    $$('.player-card--drop-target').forEach((el) => el.classList.remove('player-card--drop-target'));
+  }
+
+  function swapPlayersByDrag(indexA, indexB) {
+    if (!DraftState.canSwapPlayerSlots(state, indexA, indexB)) return;
+    state = DraftState.swapPlayerSlots(state, indexA, indexB);
+    persist();
+    renderAll();
+  }
+
+  function initPlayerDragDrop() {
+    const grid = $('#players-grid');
+    if (!grid) return;
+
+    grid.addEventListener('dragstart', (e) => {
+      if (isStreamMode() || editingPlayerName !== null) return;
+      const handle = e.target.closest('.player-card__drag-handle');
+      if (!handle) return;
+      const indexA = Number(handle.dataset.player);
+      e.dataTransfer.setData(PLAYER_DRAG_TYPE, String(indexA));
+      e.dataTransfer.effectAllowed = 'move';
+      handle.closest('.player-card')?.classList.add('player-card--dragging');
+    });
+
+    grid.addEventListener('dragend', () => {
+      clearPlayerDragVisuals();
+    });
+
+    grid.addEventListener('dragover', (e) => {
+      if (isStreamMode()) return;
+      const card = e.target.closest('.player-card');
+      if (!card) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      $$('.player-card--drop-target').forEach((el) => {
+        if (el !== card) el.classList.remove('player-card--drop-target');
+      });
+      card.classList.add('player-card--drop-target');
+    });
+
+    grid.addEventListener('dragleave', (e) => {
+      const card = e.target.closest('.player-card');
+      if (!card) return;
+      const related = e.relatedTarget;
+      if (related && card.contains(related)) return;
+      card.classList.remove('player-card--drop-target');
+    });
+
+    grid.addEventListener('drop', (e) => {
+      if (isStreamMode()) return;
+      e.preventDefault();
+      clearPlayerDragVisuals();
+      const card = e.target.closest('.player-card');
+      if (!card) return;
+      const indexB = Number(card.dataset.player);
+      const indexA = Number(e.dataTransfer.getData(PLAYER_DRAG_TYPE));
+      swapPlayersByDrag(indexA, indexB);
+    });
   }
 
   function escapeAttr(s) {
@@ -1155,6 +1228,8 @@
       e.preventDefault();
       openSlotPicker(Number(slot.dataset.player), Number(slot.dataset.slot));
     });
+
+    initPlayerDragDrop();
 
     $('#slot-picker-search')?.addEventListener('input', renderSlotPickerResults);
     $('#slot-picker-clear')?.addEventListener('click', clearSlotPokemon);
