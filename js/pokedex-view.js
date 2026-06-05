@@ -37,9 +37,10 @@
   }
 
   function spriteImg(pokemon) {
-    return global.SpriteImg.tag(pokemon.spriteUrl || PLACEHOLDER, {
+    return global.SpriteImg.tagForPokemon(pokemon, {
       alt: pokemon.name,
       loading: 'lazy',
+      decoding: 'async',
     });
   }
 

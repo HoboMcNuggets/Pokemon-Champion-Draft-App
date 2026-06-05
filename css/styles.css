@@ -1000,7 +1000,8 @@ input[type="file"] {
   z-index: 1;
 }
 
-.view-mode-switch {
+.view-mode-switch,
+.sprite-mode-switch {
   position: relative;
   z-index: 300;
   display: inline-flex;
@@ -1009,6 +1010,11 @@ input[type="file"] {
   overflow: hidden;
   background: var(--view-mode-switch-bg, rgba(15, 17, 23, 0.92));
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.sprite-mode-switch {
+  z-index: auto;
+  box-shadow: none;
 }
 
 .view-mode-btn {
@@ -1035,9 +1041,28 @@ input[type="file"] {
   background: var(--bg-elevated);
 }
 
-.view-mode-btn.active {
+.view-mode-btn.active,
+.sprite-mode-btn.active {
   background: var(--accent);
   color: #fff;
+}
+
+.sprite-mode-btn {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.sprite-mode-btn:hover {
+  color: var(--text);
+  background: var(--bg-elevated);
 }
 
 .stream-mode .view-mode-switch {

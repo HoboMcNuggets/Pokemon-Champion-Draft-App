@@ -254,6 +254,15 @@
         </div>
       </section>
 
+      <section class="settings-section" aria-labelledby="settings-sprite-heading">
+        <h3 id="settings-sprite-heading" class="settings-section__title">Style de sprites</h3>
+        <p class="settings-section__hint">Rétro : sprites Pokémon Showdown. Nouveau : sprites animés Pokémon HOME (Pokeos).</p>
+        <div class="sprite-mode-switch" role="group" aria-label="Style de sprites">
+          <button type="button" class="sprite-mode-btn active" data-sprite-mode="retro" id="btn-sprite-retro" aria-pressed="true">Rétro (Showdown)</button>
+          <button type="button" class="sprite-mode-btn" data-sprite-mode="new" id="btn-sprite-new" aria-pressed="false">Nouveau (Pokeos)</button>
+        </div>
+      </section>
+
       <section class="settings-section" aria-labelledby="settings-pool-heading">
         <h3 id="settings-pool-heading" class="settings-section__title">Pool actif</h3>
         <p class="settings-section__hint">Gérer les Pokémon éligibles au draft. Modifiable uniquement avant le démarrage du draft (onglet Pokédex ou import ci-dessous).</p>
@@ -337,6 +346,10 @@
   <script src="js/state.js"></script>
 
   <script src="js/storage.js"></script>
+
+  <script src="js/pokeos-sprite-index-data.js"></script>
+
+  <script src="js/sprite-resolver.js"></script>
 
   <script src="js/type-display.js"></script>
 

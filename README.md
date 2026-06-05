@@ -12,7 +12,7 @@ Application HTML / JavaScript pour animer un draft Pokémon à 8 joueurs (bans e
 
 - **Tableau de bord** : grille des 8 joueurs (noms éditables, équipes modifiables), suivi des bans et picks. À la fin du draft : récapitulatif (types, stats par joueur, durée) puis **Nouveau draft** (avec confirmation).
 - **Pokédex** : liste complète (~1300 Pokémon), stats, types, habiletés, BST, recherche et filtres Actif / Inactif. Clic sur une ligne pour afficher le détail (stats + abilities).
-- **Configuration** : durée du timer par tour (minutes et secondes, mode Stream), thème de couleur, export / import JSON du draft, réinitialisation du draft.
+- **Configuration** : durée du timer par tour (minutes et secondes, mode Stream), thème de couleur, style de sprites (Rétro Showdown / Nouveau Pokeos), export / import JSON du draft, réinitialisation du draft.
 
 ## Flux bans + draft
 
@@ -53,7 +53,21 @@ Pour régénérer le JS embarqué seul :
 node scripts/json-to-pokedex-js.mjs
 ```
 
-Sources : [PokeAPI](https://pokeapi.co/) (stats et habiletés via `/pokemon` + `/ability`), sprites Pokémon Showdown (animés) avec repli artwork PokeAPI. Les Pokémon actifs du fichier `data/pokemon-pool.champions-s1.json` sont marqués `enabled: true`.
+Sources : [PokeAPI](https://pokeapi.co/) (stats et habiletés via `/pokemon` + `/ability`), sprites Pokémon Showdown (animés, mode **Rétro**) avec repli artwork PokeAPI ; sprites [Pokeos](https://www.pokeos.com/) Pokémon HOME (GIF animés ou PNG `render/`, mode **Nouveau**) avec repli Showdown si absent. Les Pokémon actifs du fichier `data/pokemon-pool.champions-s1.json` sont marqués `enabled: true`.
+
+### Style de sprites
+
+Dans l’onglet **Configuration**, basculez entre **Rétro (Showdown)** et **Nouveau (Pokeos)**. Le choix est mémorisé (`pokemonDraft.spriteMode`) et s’applique partout (draft, stream, Pokédex).
+
+Audit des sprites Pokeos :
+
+```bash
+node scripts/check-pokeos-sprites.mjs
+node scripts/check-pokeos-sprites.mjs --scope=active
+node scripts/check-pokeos-sprites.mjs --scope=full
+```
+
+Rapports : `data/pokeos-sprite-report.active.json` (pool actif), `data/pokeos-sprite-report.full.json` (Pokédex complet).
 
 ## Modes Tableau de bord / Stream
 
@@ -87,10 +101,10 @@ node scripts/test-state.mjs
 
 ## Persistance
 
-`localStorage` : clé `pokemonDraft.v1` (draft), `pokemonDraft.theme` (thème), `pokemonDraft.timerDurationSec` (durée du timer, 10–600 s), `pokemonDraft.viewMode` (tableau de bord / stream). Le Pokédex complet n'est pas mis en cache (trop volumineux).
+`localStorage` : clé `pokemonDraft.v1` (draft), `pokemonDraft.theme` (thème), `pokemonDraft.spriteMode` (rétro / nouveau), `pokemonDraft.timerDurationSec` (durée du timer, 10–600 s), `pokemonDraft.viewMode` (tableau de bord / stream). Le Pokédex complet n'est pas mis en cache (trop volumineux).
 
 ## Développement / agents IA
 
 Pour la maintenance et les agents Cursor : **[AGENTS.md](AGENTS.md)** (carte des modules, pipeline de données, fichiers à ne pas indexer, scripts Node complets).
 
-Scripts additionnels non détaillés ci-dessus : `build-pool.mjs`, `patch-sprites-pokedex.mjs`, `check-mega-sprites.mjs`, `build-type-themes.mjs`, `test-recap.mjs` — voir le tableau dans `AGENTS.md`.
+Scripts additionnels non détaillés ci-dessus : `build-pool.mjs`, `patch-sprites-pokedex.mjs`, `check-mega-sprites.mjs`, `check-pokeos-sprites.mjs`, `build-type-themes.mjs`, `test-recap.mjs` — voir le tableau dans `AGENTS.md`.

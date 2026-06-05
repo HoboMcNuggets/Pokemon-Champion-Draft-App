@@ -2,7 +2,7 @@
  * Application draft Pokémon — opérateur stream.
  */
 (function () {
-  const { DraftState, SpriteImg } = window;
+  const { DraftState, SpriteImg, SpriteResolver } = window;
   const PHASE = DraftState.PHASE;
   const { DraftStorage } = window;
   const { PoolImport } = window;
@@ -18,6 +18,16 @@
 
   let poolData = null;
   let state = DraftState.createInitialState();
+
+  function lookupPokemon(ref) {
+    if (!ref) return null;
+    const id = ref.id || ref.pokemonId;
+    if (id && poolData?.pokemon) {
+      const found = DraftState.findPokemon(poolData, id);
+      if (found) return found;
+    }
+    return ref;
+  }
   let uiState = {
     pokedexFilters: {
       search: '',
@@ -369,10 +379,9 @@
           const pick = team[s];
           const slotAttrs = `data-player="${i}" data-slot="${s}" role="button" tabindex="0" title="Choisir un Pokémon"`;
           if (pick) {
-            return `<div class="team-slot team-slot--clickable team-slot--filled" ${slotAttrs}>${SpriteImg.renderSlotContent(pick.spriteUrl, {
+            return `<div class="team-slot team-slot--clickable team-slot--filled" ${slotAttrs}>${SpriteImg.renderSlotForPokemon(lookupPokemon(pick), {
               alt: pick.name,
               draggable: false,
-              id: pick.id,
               poolData,
               wrapClass: 'sprite-slot-wrap sprite-slot-wrap--dashboard',
               megaLabelClass: 'sprite-mega-label sprite-mega-label--dashboard',
@@ -580,7 +589,7 @@
         const sel = state.selectedPokemonId === p.id;
         return `
         <div class="search-result-item ${sel ? 'selected' : ''}" data-id="${escapeAttr(p.id)}" role="button" tabindex="0">
-          ${SpriteImg.tag(p.spriteUrl)}
+          ${SpriteImg.tagForPokemon(p)}
           <div class="search-result-item__info">
             <div class="search-result-item__name">${escapeHtml(p.name)}</div>
             <div class="search-result-item__meta">${escapeHtml(p.pokedexId)} · BST ${PokemonSpecies.getBaseTotal(p)}</div>
@@ -917,6 +926,26 @@
     setTheme(DraftStorage.loadTheme());
   }
 
+  function setSpriteMode(mode) {
+    const id = SpriteResolver?.setMode?.(mode) ?? DraftStorage.saveSpriteMode(mode);
+    document.querySelectorAll('.sprite-mode-btn').forEach((btn) => {
+      const active = btn.dataset.spriteMode === id;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    renderAll();
+  }
+
+  function initSpriteMode() {
+    const saved = DraftStorage.loadSpriteMode();
+    document.querySelectorAll('.sprite-mode-btn').forEach((btn) => {
+      const active = btn.dataset.spriteMode === saved;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    SpriteResolver?.setMode?.(saved);
+  }
+
   function syncTimerConfigFields() {
     const total = StreamView?.getTurnDurationSec?.() ?? DraftStorage.loadTurnTimerDuration();
     const minInput = $('#config-timer-min');
@@ -1103,7 +1132,7 @@
       .map(
         (p) => `
         <div class="search-result-item slot-picker-item" data-id="${escapeAttr(p.id)}" role="button" tabindex="0">
-          ${SpriteImg.tag(p.spriteUrl)}
+          ${SpriteImg.tagForPokemon(p)}
           <div class="search-result-item__info">
             <div class="search-result-item__name">${escapeHtml(p.name)}</div>
             <div class="search-result-item__meta">${escapeHtml(p.pokedexId)} · BST ${PokemonSpecies.getBaseTotal(p)}</div>
@@ -1494,6 +1523,10 @@
       btn.addEventListener('click', () => setTheme(btn.dataset.themeId));
     });
 
+    document.querySelectorAll('.sprite-mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => setSpriteMode(btn.dataset.spriteMode));
+    });
+
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey && e.key === 'z') {
         e.preventDefault();
@@ -1530,14 +1563,17 @@
     PokedexView.bindFilters($('#pokedex-root'), onPokedexFilterEvent);
   }
 
-  function init() {
+  async function init() {
     loadInitial();
     initTabs();
     initEvents();
     initTheme();
+    initSpriteMode();
     initTimerConfig();
     initViewMode();
     placeMessageBar();
+
+    await SpriteResolver?.loadIndex?.();
     renderAll();
 
     if (isFullPokedex(poolData)) return;

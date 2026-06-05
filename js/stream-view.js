@@ -84,10 +84,12 @@
       const pick = team[s];
       if (pick) {
         const isSelected = selectedPokemonId === pick.id;
-        return `<div class="stream-slot stream-slot--filled stream-spotlight-selectable${isSelected ? ' stream-spotlight-selectable--selected' : ''}" data-pokemon-id="${escapeAttr(pick.id)}" role="button" tabindex="0" title="${escapeAttr(pick.name)}" aria-label="${escapeAttr(pick.name)}" aria-pressed="${isSelected ? 'true' : 'false'}">${SpriteImg.renderSlotContent(pick.spriteUrl, {
+        const pokemon = poolData && global.DraftState?.findPokemon
+          ? global.DraftState.findPokemon(poolData, pick.id) || pick
+          : pick;
+        return `<div class="stream-slot stream-slot--filled stream-spotlight-selectable${isSelected ? ' stream-spotlight-selectable--selected' : ''}" data-pokemon-id="${escapeAttr(pick.id)}" role="button" tabindex="0" title="${escapeAttr(pick.name)}" aria-label="${escapeAttr(pick.name)}" aria-pressed="${isSelected ? 'true' : 'false'}">${SpriteImg.renderSlotForPokemon(pokemon, {
           className: 'stream-slot__sprite',
           alt: pick.name,
-          id: pick.id,
           poolData,
           wrapClass: 'sprite-slot-wrap sprite-slot-wrap--stream',
           megaLabelClass: 'sprite-mega-label sprite-mega-label--stream',
@@ -199,7 +201,7 @@
     }
 
     frameEl.className = 'stream-spotlight__frame';
-    frameEl.innerHTML = SpriteImg.tag(pokemon.spriteUrl, {
+    frameEl.innerHTML = SpriteImg.tagForPokemon(pokemon, {
       className: 'stream-spotlight__sprite',
       alt: pokemon.name,
     });
@@ -259,7 +261,7 @@
     return `
       <div class="stream-banned__cell">
         <div class="stream-banned__item stream-spotlight-selectable${isSelected ? ' stream-spotlight-selectable--selected' : ''}" data-pokemon-id="${escapeAttr(ban.pokemonId)}" role="button" tabindex="0" title="${escapeAttr(pokemon.name)}" aria-label="${escapeAttr(pokemon.name)}" aria-pressed="${isSelected ? 'true' : 'false'}">
-          ${SpriteImg.tag(pokemon.spriteUrl)}
+          ${SpriteImg.tagForPokemon(pokemon)}
         </div>
         ${megaLabel}
       </div>`;

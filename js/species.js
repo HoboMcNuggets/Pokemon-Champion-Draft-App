@@ -361,9 +361,46 @@
       .replace(/>/g, '&gt;');
   }
 
+  function parseFallbacks(img) {
+    try {
+      const raw = img.dataset.spriteFallbacks;
+      if (!raw) return [];
+      return JSON.parse(raw);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function isExternalSpriteUrl(url) {
+    return /pokeos\.com|pokemonshowdown\.com/i.test(String(url || ''));
+  }
+
   function handleSpriteError(img) {
+    if (!img.isConnected) return;
+
+    const fallbacks = parseFallbacks(img);
+    const fbIdx = Number(img.dataset.spriteFallbackIdx || 0);
+    if (fbIdx < fallbacks.length) {
+      const next = fallbacks[fbIdx];
+      img.dataset.spriteFallbackIdx = String(fbIdx + 1);
+      img.dataset.spriteSrc = next;
+      img.dataset.spriteRetries = '0';
+      img.src = next;
+      return;
+    }
+
     const original = img.dataset.spriteSrc;
-    if (!original || original === PLACEHOLDER) return;
+    if (!original || original === PLACEHOLDER) {
+      img.onerror = null;
+      if (img.src !== PLACEHOLDER) img.src = PLACEHOLDER;
+      return;
+    }
+
+    if (isExternalSpriteUrl(original)) {
+      img.onerror = null;
+      img.src = PLACEHOLDER;
+      return;
+    }
 
     const retries = Number(img.dataset.spriteRetries || 0);
     if (retries >= MAX_RETRIES) {
@@ -384,11 +421,31 @@
   function tag(spriteUrl, options) {
     const opts = options || {};
     const src = spriteUrl || PLACEHOLDER;
+    const fallbacks = Array.isArray(opts.fallbacks)
+      ? opts.fallbacks.filter((u) => u && u !== src)
+      : [];
+    const fbAttr = fallbacks.length
+      ? ` data-sprite-fallbacks="${escapeAttr(JSON.stringify(fallbacks))}"`
+      : '';
     const cls = opts.className ? ` class="${escapeAttr(opts.className)}"` : '';
     const alt = opts.alt != null ? ` alt="${escapeAttr(opts.alt)}"` : ' alt=""';
     const loading = opts.loading ? ` loading="${escapeAttr(opts.loading)}"` : '';
+    const decoding = opts.decoding ? ` decoding="${escapeAttr(opts.decoding)}"` : '';
     const draggable = opts.draggable === false ? ' draggable="false"' : '';
-    return `<img${cls} src="${escapeAttr(src)}" data-sprite-src="${escapeAttr(src)}"${alt}${loading}${draggable} onerror="handleSpriteError(this)">`;
+    return `<img${cls} src="${escapeAttr(src)}" data-sprite-src="${escapeAttr(src)}"${fbAttr}${alt}${loading}${decoding}${draggable} onerror="handleSpriteError(this)">`;
+  }
+
+  function resolveSprite(pokemon) {
+    if (global.SpriteResolver?.resolve) {
+      return global.SpriteResolver.resolve(pokemon);
+    }
+    const url = pokemon?.spriteUrl || PLACEHOLDER;
+    return { url, fallbacks: url !== PLACEHOLDER ? [PLACEHOLDER] : [] };
+  }
+
+  function tagForPokemon(pokemon, options) {
+    const resolved = resolveSprite(pokemon);
+    return tag(resolved.url, { ...options, fallbacks: resolved.fallbacks });
   }
 
   function isMegaPokemon(ref, poolData) {
@@ -412,6 +469,7 @@
       className: opts.className,
       alt: opts.alt,
       draggable: opts.draggable,
+      fallbacks: opts.fallbacks,
     });
     const mega = isMegaPokemon(
       { id: opts.id, pokemonId: opts.pokemonId, spriteUrl, isMega: opts.isMega },
@@ -423,13 +481,28 @@
     return `<div class="${wrapClass}">${img}<span class="${labelClass}">MEGA</span></div>`;
   }
 
+  function renderSlotForPokemon(pokemon, options) {
+    const resolved = resolveSprite(pokemon);
+    const opts = options || {};
+    return renderSlotContent(resolved.url, {
+      ...opts,
+      fallbacks: resolved.fallbacks,
+      id: opts.id ?? pokemon?.id,
+      pokemonId: opts.pokemonId ?? pokemon?.id,
+      isMega: opts.isMega ?? pokemon?.isMega,
+    });
+  }
+
   global.handleSpriteError = handleSpriteError;
   global.SpriteImg = {
     PLACEHOLDER,
     escapeAttr,
     tag,
+    tagForPokemon,
+    resolveSprite,
     isMegaPokemon,
     renderSlotContent,
+    renderSlotForPokemon,
     handleError: handleSpriteError,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

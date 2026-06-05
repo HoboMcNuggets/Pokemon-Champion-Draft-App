@@ -8,6 +8,7 @@
   const VIEW_MODE_KEY = 'pokemonDraft.viewMode';
   const THEME_KEY = 'pokemonDraft.theme';
   const TIMER_DURATION_KEY = 'pokemonDraft.timerDurationSec';
+  const SPRITE_MODE_KEY = 'pokemonDraft.spriteMode';
   const TIMER_DURATION_MIN = 10;
   const TIMER_DURATION_MAX = 600;
   const TIMER_DURATION_DEFAULT = 60;
@@ -179,6 +180,28 @@
     }
   }
 
+  function normalizeSpriteMode(mode) {
+    return mode === 'new' ? 'new' : 'retro';
+  }
+
+  function saveSpriteMode(mode) {
+    try {
+      localStorage.setItem(SPRITE_MODE_KEY, normalizeSpriteMode(mode));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function loadSpriteMode() {
+    try {
+      const v = localStorage.getItem(SPRITE_MODE_KEY);
+      return normalizeSpriteMode(v);
+    } catch (e) {
+      return 'retro';
+    }
+  }
+
   global.DraftStorage = {
     saveDraft,
     loadDraft,
@@ -199,5 +222,8 @@
     TIMER_DURATION_MIN,
     TIMER_DURATION_MAX,
     TIMER_DURATION_DEFAULT,
+    saveSpriteMode,
+    loadSpriteMode,
+    normalizeSpriteMode,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
