@@ -789,7 +789,7 @@
       document.getElementById(id)?.classList.toggle('hidden', isComplete);
     }
 
-    for (const sel of ['.stream-search-panel', '.stream-stats-wrap', '.stream-actions-row']) {
+    for (const sel of ['.stream-search-panel', '.stream-stats-wrap']) {
       middle?.querySelector(sel)?.classList.toggle('hidden', isComplete);
     }
 

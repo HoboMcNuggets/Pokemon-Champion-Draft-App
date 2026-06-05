@@ -571,10 +571,12 @@
     const setup = state.phase === PHASE.SETUP;
     const banPhase = state.phase === PHASE.BAN;
     const draftPhase = state.phase === PHASE.DRAFT;
+    const complete = state.phase === PHASE.COMPLETE;
     const playing = isPlayingPhase();
     const stream = isStreamMode();
     const activePlayer = DraftState.getActivePlayerIndex(state);
     const hasSelection = !!state.selectedPokemonId;
+    const hasHistory = (state.actionHistory || []).length > 0;
     const pokemon = hasSelection && poolData
       ? DraftState.findPokemon(poolData, state.selectedPokemonId)
       : null;
@@ -584,7 +586,7 @@
     const btnPick = $('#btn-pick');
     const btnUndoDock = $('#btn-undo-dock');
 
-    const showStreamDock = stream && (setup || playing);
+    const showStreamDock = stream && (setup || playing || (complete && hasHistory));
 
     if (btnStartStream) {
       const showStart = setup && stream;
@@ -605,9 +607,9 @@
         !DraftState.canAssignPick(pokemon, state, activePlayer);
     }
     if (btnUndoDock) {
-      const hasHistory = (state.actionHistory || []).length > 0;
-      btnUndoDock.disabled = !playing || !hasHistory;
-      btnUndoDock.classList.toggle('hidden', !playing || setup);
+      const canUndo = hasHistory && (playing || (complete && stream));
+      btnUndoDock.disabled = !canUndo;
+      btnUndoDock.classList.toggle('hidden', setup || !canUndo);
     }
 
     const streamActions = $('.stream-actions');

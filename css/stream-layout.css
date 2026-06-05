@@ -989,9 +989,10 @@
 
 /* Zone boutons : bas-droite du centre, au-dessus de Bannis, à gauche de J8 */
 .stream-actions-row {
-  position: absolute;
-  right: 0;
-  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.15rem 0.35rem 0.1rem;
   z-index: 30;
   flex-shrink: 0;
   pointer-events: none;
