@@ -334,7 +334,7 @@
       return 'Renommez les joueurs dans la grille, passez en mode Stream, puis démarrez le draft.';
     }
     if (state.phase === PHASE.BAN) {
-      return 'Chaque joueur bannit 1 Pokémon et 1 Méga (ordre libre), en 2 tours J1→J8 puis J1→J8 : recherchez, puis Bannir pour le joueur en cours.';
+      return 'Chaque joueur bannit 1 Pokémon et 1 Mega (ordre libre), en 2 tours J1→J8 puis J1→J8 : recherchez, puis Bannir pour le joueur en cours.';
     }
     if (state.phase === PHASE.DRAFT) {
       return '';
@@ -1054,7 +1054,7 @@
       if (requiredKind === 'pokemon') {
         showMessage('Ce joueur doit bannir un Pokémon (forme de base).', 'error');
       } else if (requiredKind === 'mega') {
-        showMessage('Ce joueur doit bannir une Méga.', 'error');
+        showMessage('Ce joueur doit bannir une Mega.', 'error');
       } else {
         showMessage('Ce Pokémon ne peut pas être banni.', 'error');
       }

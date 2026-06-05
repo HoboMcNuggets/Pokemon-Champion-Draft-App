@@ -504,7 +504,7 @@
     if (!mega) return img;
     const wrapClass = opts.wrapClass || 'sprite-slot-wrap';
     const labelClass = opts.megaLabelClass || 'sprite-mega-label';
-    return `<div class="${wrapClass}">${img}<span class="${labelClass}">MEGA</span></div>`;
+    return `<div class="${wrapClass}">${img}<span class="${labelClass}">Mega</span></div>`;
   }
 
   function renderSlotForPokemon(pokemon, options) {

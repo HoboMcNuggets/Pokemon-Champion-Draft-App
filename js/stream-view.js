@@ -329,7 +329,7 @@
       poolData
     );
     const megaLabel = isMega
-      ? '<span class="sprite-mega-label sprite-mega-label--banned">MEGA</span>'
+      ? '<span class="sprite-mega-label sprite-mega-label--banned">Mega</span>'
       : '';
 
     return `
@@ -457,7 +457,7 @@
         const requiredKind = DraftState.getRequiredBanKind(state, active);
         const kindLabel =
           requiredKind === 'mega'
-            ? ' · Ban Méga requis'
+            ? ' · Ban Mega requis'
             : requiredKind === 'pokemon'
               ? ' · Ban Pokémon requis'
               : '';

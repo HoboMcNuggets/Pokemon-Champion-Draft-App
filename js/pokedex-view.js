@@ -159,7 +159,7 @@
             <th class="sortable" data-sort="spDef">Déf. Spé.</th>
             <th class="sortable" data-sort="speed">Vitesse</th>
             <th>Statut</th>
-            <th>Méga</th>
+            <th>Mega</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
