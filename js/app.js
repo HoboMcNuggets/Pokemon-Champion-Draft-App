@@ -219,7 +219,7 @@
 
   function getSearchCandidates() {
     if (!poolData || !isPlayingPhase()) return [];
-    return PokemonSpecies.filterSelectable(poolData.pokemon, state.usedSpecies);
+    return PokemonSpecies.filterSelectable(poolData.pokemon, state);
   }
 
   function clearPokemonSearch() {
@@ -786,11 +786,23 @@
     if (!poolData) return [];
     const team = state.teams[playerIndex] || [];
     const current = team[slotIndex];
-    let usedExcluding = state.usedSpecies;
+    let availability = {
+      usedSpecies: state.usedSpecies,
+      bannedPokemonIds: state.bannedPokemonIds || [],
+    };
     if (current?.speciesKey) {
-      usedExcluding = state.usedSpecies.filter((k) => k !== current.speciesKey);
+      availability = {
+        ...availability,
+        usedSpecies: state.usedSpecies.filter((k) => k !== current.speciesKey),
+      };
     }
-    return PokemonSpecies.filterSelectable(poolData.pokemon, usedExcluding);
+    if (current?.id) {
+      availability = {
+        ...availability,
+        bannedPokemonIds: availability.bannedPokemonIds.filter((id) => id !== current.id),
+      };
+    }
+    return PokemonSpecies.filterSelectable(poolData.pokemon, availability);
   }
 
   function updateSlotPickerClearButton() {

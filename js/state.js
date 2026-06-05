@@ -58,6 +58,8 @@
 
       usedSpecies: [],
 
+      bannedPokemonIds: [],
+
       bans: [],
 
       teams: Array.from({ length: PLAYER_COUNT }, () => []),
@@ -216,6 +218,8 @@
 
       usedSpecies: [],
 
+      bannedPokemonIds: [],
+
       bans: [],
 
       teams: Array.from({ length: PLAYER_COUNT }, () => []),
@@ -252,7 +256,7 @@
 
     if (state.totalBansDone >= TOTAL_BANS) return false;
 
-    return global.PokemonSpecies.isSelectable(pokemon, state.usedSpecies);
+    return global.PokemonSpecies.isSelectable(pokemon, state);
 
   }
 
@@ -268,7 +272,7 @@
 
     if ((state.teams[playerIndex] || []).length >= PICKS_PER_PLAYER) return false;
 
-    return global.PokemonSpecies.isSelectable(pokemon, state.usedSpecies);
+    return global.PokemonSpecies.isSelectable(pokemon, state);
 
   }
 
@@ -278,6 +282,8 @@
 
     const playerIndex = getActivePlayerIndex(state);
 
+    const isMegaBan = pokemon.isMega === true;
+
     const entry = {
 
       playerIndex,
@@ -285,6 +291,8 @@
       pokemonId: pokemon.id,
 
       speciesKey: pokemon.speciesKey,
+
+      isMega: isMegaBan,
 
       pokemon: {
 
@@ -309,11 +317,21 @@
         ? new Date().toISOString()
         : state.draftStartedAt;
 
+    const usedSpecies = isMegaBan
+      ? state.usedSpecies
+      : [...state.usedSpecies, pokemon.speciesKey];
+
+    const bannedPokemonIds = isMegaBan
+      ? [...(state.bannedPokemonIds || []), pokemon.id]
+      : state.bannedPokemonIds || [];
+
     let next = {
 
       ...state,
 
-      usedSpecies: [...state.usedSpecies, pokemon.speciesKey],
+      usedSpecies,
+
+      bannedPokemonIds,
 
       bans: [...state.bans, entry],
 
@@ -336,6 +354,8 @@
           pokemonId: pokemon.id,
 
           speciesKey: pokemon.speciesKey,
+
+          isMega: isMegaBan,
 
         },
 
@@ -469,11 +489,29 @@
 
       bans.pop();
 
+      const removedBan = state.bans[state.bans.length - 1];
+
+      const isMegaBan = removedBan?.isMega === true;
+
       const usedSpecies = [...state.usedSpecies];
 
-      const idx = usedSpecies.lastIndexOf(last.speciesKey);
+      if (!isMegaBan) {
 
-      if (idx >= 0) usedSpecies.splice(idx, 1);
+        const idx = usedSpecies.lastIndexOf(last.speciesKey);
+
+        if (idx >= 0) usedSpecies.splice(idx, 1);
+
+      }
+
+      let bannedPokemonIds = [...(state.bannedPokemonIds || [])];
+
+      if (isMegaBan) {
+
+        const idIdx = bannedPokemonIds.lastIndexOf(last.pokemonId);
+
+        if (idIdx >= 0) bannedPokemonIds.splice(idIdx, 1);
+
+      }
 
 
 
@@ -482,6 +520,8 @@
       next.bans = bans;
 
       next.usedSpecies = usedSpecies;
+
+      next.bannedPokemonIds = bannedPokemonIds;
 
       next.totalBansDone = totalBansDone;
 
@@ -505,7 +545,11 @@
 
       const stillUsed = teams.flat().some((p) => p.speciesKey === last.speciesKey);
 
-      const stillBanned = state.bans.some((b) => b.speciesKey === last.speciesKey);
+      const stillBanned = state.bans.some(
+
+        (b) => b.isMega !== true && b.speciesKey === last.speciesKey
+
+      );
 
       if (!stillUsed && !stillBanned) {
 
@@ -599,7 +643,13 @@
 
   function rebuildUsedSpecies(state) {
 
-    const fromBans = (state.bans || []).map((b) => b.speciesKey).filter(Boolean);
+    const fromBans = (state.bans || [])
+
+      .filter((b) => b.isMega !== true)
+
+      .map((b) => b.speciesKey)
+
+      .filter(Boolean);
 
     const fromTeams = (state.teams || [])
 
@@ -610,6 +660,26 @@
       .filter(Boolean);
 
     return [...new Set([...fromBans, ...fromTeams])];
+
+  }
+
+
+
+  function rebuildBannedPokemonIds(state) {
+
+    return [
+
+      ...new Set(
+
+        (state.bans || [])
+
+          .filter((b) => b.isMega === true && b.pokemonId)
+
+          .map((b) => b.pokemonId)
+
+      ),
+
+    ];
 
   }
 
@@ -1023,7 +1093,15 @@
 
     let state = deserialize(rawState);
 
-    state = { ...state, usedSpecies: rebuildUsedSpecies(state) };
+    state = {
+
+      ...state,
+
+      usedSpecies: rebuildUsedSpecies(state),
+
+      bannedPokemonIds: rebuildBannedPokemonIds(state),
+
+    };
 
     return state;
 
@@ -1054,6 +1132,8 @@
       pokemonId: b.pokemonId,
 
       speciesKey: b.speciesKey,
+
+      isMega: b.isMega === true,
 
       pokemon: b.pokemon || {
 
@@ -1088,6 +1168,8 @@
       : Array.from({ length: PLAYER_COUNT }, () => []);
 
     s.usedSpecies = Array.isArray(s.usedSpecies) ? s.usedSpecies : [];
+
+    s.bannedPokemonIds = Array.isArray(s.bannedPokemonIds) ? s.bannedPokemonIds : [];
 
     s.bans = Array.isArray(s.bans)
 
@@ -1131,6 +1213,12 @@
     delete s.banPlayerIndex;
 
     delete s.banSubStep;
+
+
+
+    s.usedSpecies = rebuildUsedSpecies(s);
+
+    s.bannedPokemonIds = rebuildBannedPokemonIds(s);
 
 
 

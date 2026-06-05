@@ -24,6 +24,32 @@
 
 
 
+  function normalizeAvailability(availability) {
+
+    if (availability && typeof availability === 'object' && !Array.isArray(availability)) {
+
+      return {
+
+        usedSpecies: availability.usedSpecies || [],
+
+        bannedPokemonIds: availability.bannedPokemonIds || [],
+
+      };
+
+    }
+
+    if (Array.isArray(availability)) {
+
+      return { usedSpecies: availability, bannedPokemonIds: [] };
+
+    }
+
+    return { usedSpecies: [], bannedPokemonIds: [] };
+
+  }
+
+
+
   function isSpeciesUsed(speciesKey, usedSpecies) {
 
     return usedSpecies.includes(speciesKey);
@@ -32,13 +58,35 @@
 
 
 
-  function isSelectable(pokemon, usedSpecies) {
+  function isPokemonIdBanned(pokemonId, bannedPokemonIds) {
+
+    return bannedPokemonIds.includes(pokemonId);
+
+  }
+
+
+
+  /**
+
+   * Éligibilité draft : espèce bloquée (ban base ou pick) ou id précis banni (ban méga).
+
+   * @param {object} pokemon
+
+   * @param {string[]|object} availability — usedSpecies[], ou état { usedSpecies, bannedPokemonIds }
+
+   */
+
+  function isSelectable(pokemon, availability) {
+
+    const { usedSpecies, bannedPokemonIds } = normalizeAvailability(availability);
 
     return (
 
       pokemon.enabled === true &&
 
-      !isSpeciesUsed(pokemon.speciesKey, usedSpecies)
+      !isSpeciesUsed(pokemon.speciesKey, usedSpecies) &&
+
+      !isPokemonIdBanned(pokemon.id, bannedPokemonIds)
 
     );
 
@@ -46,9 +94,9 @@
 
 
 
-  function filterSelectable(pool, usedSpecies) {
+  function filterSelectable(pool, availability) {
 
-    return pool.filter((p) => isSelectable(p, usedSpecies));
+    return pool.filter((p) => isSelectable(p, availability));
 
   }
 
@@ -60,11 +108,7 @@
 
     const horsPool = pool.length - enabled.length;
 
-    const disponibles = enabled.filter(
-
-      (p) => !isSpeciesUsed(p.speciesKey, state.usedSpecies)
-
-    ).length;
+    const disponibles = enabled.filter((p) => isSelectable(p, state)).length;
 
     const actifs = enabled.length;
 
@@ -210,6 +254,8 @@
     STAT_KEYS,
 
     getBaseTotal,
+
+    normalizeAvailability,
 
     isSelectable,
 

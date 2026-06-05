@@ -18,7 +18,7 @@ Application HTML / JavaScript pour animer un draft Pokémon à 8 joueurs (bans e
 
 1. **Phase bans** (16 bans) : chaque joueur bannit 2 Pokémon. **Tour 1** : J1→J8, **tour 2** : J1→J8 (ordre linéaire, pas de snake).
 2. **Phase draft** (64 picks, snake) : 8 tours de 8 picks. Ordre alterné comme les bans (aller / retour).
-3. Les Pokémon bannis et draftés disparaissent du pool de recherche (même `speciesKey` pour base / méga).
+3. **Bans** : un ban **méga** retire uniquement cette forme (les autres méga et la base restent disponibles) ; un ban sur la **forme de base** retire toute la famille (`speciesKey`). **Picks** : toute la famille est retirée du pool (même `speciesKey`).
 
 Le joueur **En cours** est imposé : pas de choix manuel du destinataire.
 
@@ -31,7 +31,7 @@ Champs obligatoires : `pokedexId`, `id`, `name`, types, stats, `spriteUrl`, `ena
 - `abilities` : tableau de 1 à 3 objets `{ "name": "Overgrow", "isHidden": false }` (noms anglais, `isHidden: true` pour le talent caché).
 - `enabled: true` → éligible au draft (pool Champions).
 - `enabled: false` → visible dans le Pokédex, exclu du draft.
-- Même `speciesKey` pour base / méga / régional → une sélection retire toute la famille.
+- Même `speciesKey` pour base / méga / régional : un **pick** ou un **ban de la base** retire toute la famille ; un **ban méga** (`isMega: true`) ne retire que l’`id` banni.
 
 ### Régénérer le Pokédex
 

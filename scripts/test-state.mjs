@@ -115,7 +115,21 @@ assert(state.totalBansDone === 1, 'totalBansDone incrémenté');
 
 const venusaur = pool.pokemon.find((p) => p.id === '0003');
 
-assert(!PokemonSpecies.isSelectable(venusaur, state.usedSpecies), 'ban bloque la famille');
+assert(PokemonSpecies.isSelectable(venusaur, state), 'ban méga : forme de base encore dispo');
+
+assert(!PokemonSpecies.isSelectable(mega, state), 'ban méga : même forme indisponible');
+
+
+
+state = DraftState.applyBan(state, venusaur);
+
+assert(!PokemonSpecies.isSelectable(venusaur, state), 'ban base bloque la forme de base');
+
+assert(!PokemonSpecies.isSelectable(mega, state), 'ban base bloque les méga');
+
+state = DraftState.undo(state);
+
+assert(PokemonSpecies.isSelectable(venusaur, state), 'undo ban base rétablit la famille');
 
 
 
@@ -124,6 +138,28 @@ state = DraftState.undo(state);
 assert(state.totalBansDone === 0, 'undo ban décrémente totalBansDone');
 
 assert(state.phase === PHASE.BAN, 'undo ban reste en phase ban');
+
+
+
+const charizard = pool.pokemon.find((p) => p.id === '0006');
+
+const megaCharizardX = pool.pokemon.find((p) => p.id === '0006-m-x');
+
+const megaCharizardY = pool.pokemon.find((p) => p.id === '0006-m-y');
+
+let charizardBanState = DraftState.startDraft(DraftState.createInitialState());
+
+charizardBanState = DraftState.applyBan(charizardBanState, megaCharizardX);
+
+assert(PokemonSpecies.isSelectable(charizard, charizardBanState), 'ban méga X : Charizard dispo');
+
+assert(PokemonSpecies.isSelectable(megaCharizardY, charizardBanState), 'ban méga X : méga Y dispo');
+
+assert(!PokemonSpecies.isSelectable(megaCharizardX, charizardBanState), 'ban méga X : méga X indispo');
+
+charizardBanState = DraftState.applyBan(charizardBanState, charizard);
+
+assert(!PokemonSpecies.isSelectable(megaCharizardY, charizardBanState), 'ban Charizard : méga Y indispo');
 
 
 
@@ -143,7 +179,7 @@ state = DraftState.startDraft(state);
 for (let i = 0; i < DraftState.TOTAL_BANS; i++) {
   const active = DraftState.getActivePlayerIndex(state);
   const candidate = poolLarge.pokemon.find(
-    (p) => p.enabled && PokemonSpecies.isSelectable(p, state.usedSpecies)
+    (p) => p.enabled && PokemonSpecies.isSelectable(p, state)
   );
   assert(candidate, `candidat ban ${i}`);
   assert(active === DraftState.getBanPlayerIndex(state.totalBansDone), `joueur actif ban ${i}`);
@@ -157,7 +193,7 @@ assert(state.totalBansDone === 16, 'totalBansDone = 16');
 for (let i = state.totalPicksDone; i < DraftState.TOTAL_PICKS; i++) {
   const active = DraftState.getActivePlayerIndex(state);
   const candidate = poolLarge.pokemon.find(
-    (p) => p.enabled && PokemonSpecies.isSelectable(p, state.usedSpecies)
+    (p) => p.enabled && PokemonSpecies.isSelectable(p, state)
   );
   assert(candidate, `candidat pick ${i}`);
   state = DraftState.assignPick(state, active, candidate);
@@ -172,19 +208,19 @@ assert(state.teams.every((t) => t.length === 8), '8 picks par joueur');
 let pickTest = DraftState.startDraft(DraftState.createInitialState());
 for (let i = 0; i < DraftState.TOTAL_BANS; i++) {
   const c = poolLarge.pokemon.find(
-    (p) => p.enabled && PokemonSpecies.isSelectable(p, pickTest.usedSpecies)
+    (p) => p.enabled && PokemonSpecies.isSelectable(p, pickTest)
   );
   pickTest = DraftState.applyBan(pickTest, c);
 }
 const active0 = DraftState.getActivePlayerIndex(pickTest);
 for (let s = 0; s < DraftState.PICKS_PER_PLAYER; s++) {
   const c = poolLarge.pokemon.find(
-    (p) => p.enabled && PokemonSpecies.isSelectable(p, pickTest.usedSpecies)
+    (p) => p.enabled && PokemonSpecies.isSelectable(p, pickTest)
   );
   pickTest = DraftState.assignPick(pickTest, active0, c);
 }
 const extra = poolLarge.pokemon.find(
-  (p) => p.enabled && PokemonSpecies.isSelectable(p, pickTest.usedSpecies)
+  (p) => p.enabled && PokemonSpecies.isSelectable(p, pickTest)
 );
 if (extra) {
   assert(
@@ -231,7 +267,7 @@ exportState = DraftState.setPlayerNames(exportState, [
 
 const banCandidate = pool.pokemon.find(
 
-  (p) => p.enabled && PokemonSpecies.isSelectable(p, exportState.usedSpecies)
+  (p) => p.enabled && PokemonSpecies.isSelectable(p, exportState)
 
 );
 
@@ -275,9 +311,13 @@ assert(restored.players[0].name === 'Alice', 'import restore nom joueur');
 
 assert(
 
-  restored.usedSpecies.includes(banCandidate.speciesKey),
+  banCandidate.isMega
 
-  'import recalcule usedSpecies'
+    ? restored.bannedPokemonIds.includes(banCandidate.id)
+
+    : restored.usedSpecies.includes(banCandidate.speciesKey),
+
+  'import recalcule disponibilité bans'
 
 );
 

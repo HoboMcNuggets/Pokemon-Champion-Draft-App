@@ -31677,7 +31677,7 @@
       "spDef": 128,
       "speed": 92,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/floette-eternal.gif",
-      "enabled": true,
+      "enabled": false,
       "speciesKey": "#0670",
       "isMega": false,
       "abilities": [
@@ -38125,7 +38125,7 @@
       "spDef": 148,
       "speed": 102,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/floette.gif",
-      "enabled": true,
+      "enabled": false,
       "speciesKey": "#0670",
       "isMega": true,
       "abilities": [
