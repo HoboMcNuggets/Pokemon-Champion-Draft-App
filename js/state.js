@@ -712,8 +712,6 @@
 
   }
 
-
-
   function remapPlayerIndex(playerIndex, indexA, indexB) {
 
     if (playerIndex === indexA) return indexB;
