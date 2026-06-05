@@ -34,8 +34,9 @@
       sortKey: 'name',
       sortDir: 'asc',
       enabledFilter: 'all',
+      typeFilters: [],
+      page: 1,
     },
-    pokedexSelectedId: null,
     lastConfigTab: 'draft',
   };
   let editingPlayerName = null;
@@ -1419,6 +1420,15 @@
       .catch(() => false);
   }
 
+  function getPokedexFilteredList() {
+    const pool = poolData?.pokemon || [];
+    return PokedexView.filterList(pool, uiState.pokedexFilters);
+  }
+
+  function getPokedexTotalPages(listLength) {
+    return Math.max(1, Math.ceil(listLength / PokedexView.PAGE_SIZE));
+  }
+
   function onPokedexFilterEvent(e, extra) {
     const f = uiState.pokedexFilters;
 
@@ -1426,20 +1436,57 @@
       toggleActivePokemon(extra.toggleId);
       return;
     }
-    if (extra?.pokemonId) {
-      uiState.pokedexSelectedId =
-        uiState.pokedexSelectedId === extra.pokemonId ? null : extra.pokemonId;
-    } else if (extra?.sortKey) {
+    if (extra?.pageNav) {
+      const totalPages = getPokedexTotalPages(getPokedexFilteredList().length);
+      let next = f.page || 1;
+      const nav = extra.pageNav;
+      if (nav === 'first') next = 1;
+      else if (nav === 'prev') next = Math.max(1, next - 1);
+      else if (nav === 'next') next = Math.min(totalPages, next + 1);
+      else if (nav === 'last') next = totalPages;
+      else {
+        const n = Number.parseInt(nav, 10);
+        if (Number.isFinite(n)) next = n;
+      }
+      f.page = Math.min(totalPages, Math.max(1, next));
+      renderPokedex();
+      return;
+    }
+    if (extra?.sortKey) {
       if (f.sortKey === extra.sortKey) {
         f.sortDir = f.sortDir === 'asc' ? 'desc' : 'asc';
       } else {
         f.sortKey = extra.sortKey;
         f.sortDir = 'asc';
       }
+      f.page = 1;
     } else if (e.target.id === 'pokedex-search') {
       f.search = e.target.value;
+      f.page = 1;
     } else if (e.target.id === 'pokedex-enabled-filter') {
       f.enabledFilter = e.target.value;
+      f.page = 1;
+    } else if (extra?.typeFilterClear) {
+      f.typeFilters = [];
+      f.page = 1;
+    } else if (extra?.typeFilterToggle !== undefined) {
+      const current = PokedexView.normalizeTypeFilters(f);
+      const slug = extra.typeFilterToggle;
+      const idx = current.indexOf(slug);
+      if (idx >= 0) {
+        f.typeFilters = current.filter((t) => t !== slug);
+      } else if (current.length < PokedexView.MAX_TYPE_FILTERS) {
+        f.typeFilters = [...current, slug];
+      } else {
+        return;
+      }
+      f.page = 1;
+    } else if (e.target.id === 'pokedex-page-jump') {
+      const totalPages = getPokedexTotalPages(getPokedexFilteredList().length);
+      const n = Number.parseInt(e.target.value, 10);
+      if (Number.isFinite(n)) {
+        f.page = Math.min(totalPages, Math.max(1, n));
+      }
     }
 
     renderPokedex();

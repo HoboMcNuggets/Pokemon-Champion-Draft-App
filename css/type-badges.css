@@ -23,8 +23,7 @@
   object-fit: contain;
 }
 
-.pokedex-table .type-badge__icon,
-.pokedex-detail__types .type-badge__icon {
+.pokedex-table .type-badge__icon {
   width: 11px;
   height: 11px;
   max-width: 11px;
@@ -33,10 +32,7 @@
 
 .pokedex-table .type-electric .type-badge__icon,
 .pokedex-table .type-electrik .type-badge__icon,
-.pokedex-table .type-électrik .type-badge__icon,
-.pokedex-detail__types .type-electric .type-badge__icon,
-.pokedex-detail__types .type-electrik .type-badge__icon,
-.pokedex-detail__types .type-électrik .type-badge__icon {
+.pokedex-table .type-électrik .type-badge__icon {
   width: 13px;
   height: 13px;
   max-width: 13px;

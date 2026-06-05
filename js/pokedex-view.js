@@ -3,6 +3,8 @@
  */
 (function (global) {
   const PLACEHOLDER = 'assets/sprites/placeholder.svg';
+  const PAGE_SIZE = 50;
+  const MAX_TYPE_FILTERS = 2;
 
   function typeClass(type) {
     return global.TypeDisplay?.typeClass(type) ?? '';
@@ -44,6 +46,33 @@
     });
   }
 
+  function getAllTypeSlugs() {
+    const labels = global.TypeDisplay?.TYPE_LABEL_EN;
+    if (!labels) return [];
+    return Object.keys(labels).sort((a, b) =>
+      global.TypeDisplay.displayLabel(a).localeCompare(global.TypeDisplay.displayLabel(b), 'fr')
+    );
+  }
+
+  function normalizeTypeFilters(filters) {
+    if (Array.isArray(filters?.typeFilters)) {
+      return filters.typeFilters.filter(Boolean).slice(0, MAX_TYPE_FILTERS);
+    }
+    if (filters?.typeFilter) {
+      return [filters.typeFilter];
+    }
+    return [];
+  }
+
+  function pokemonMatchesTypeFilters(pokemon, typeFilters) {
+    if (!typeFilters?.length || !global.TypeDisplay) return true;
+    const types = [
+      global.TypeDisplay.typeSlug(pokemon.type1),
+      global.TypeDisplay.typeSlug(pokemon.type2),
+    ].filter(Boolean);
+    return typeFilters.every((filter) => types.includes(filter));
+  }
+
   function filterList(pool, filters) {
     let list = [...pool];
     list = global.PokemonSpecies.searchPokemon(list, filters.search);
@@ -53,6 +82,11 @@
       list = list.filter((p) => p.enabled === true);
     } else if (enabledFilter === 'inactive') {
       list = list.filter((p) => p.enabled === false);
+    }
+
+    const typeFilters = normalizeTypeFilters(filters);
+    if (typeFilters.length) {
+      list = list.filter((p) => pokemonMatchesTypeFilters(p, typeFilters));
     }
 
     const sortKey = filters.sortKey || 'name';
@@ -82,6 +116,41 @@
     return list;
   }
 
+  function getPaginationMeta(listLength, page) {
+    const totalPages = Math.max(1, Math.ceil(listLength / PAGE_SIZE));
+    const safePage = Math.min(totalPages, Math.max(1, page || 1));
+    const rangeStart = listLength === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+    const rangeEnd = Math.min(safePage * PAGE_SIZE, listLength);
+    return {
+      page: safePage,
+      totalPages,
+      totalItems: listLength,
+      rangeStart,
+      rangeEnd,
+    };
+  }
+
+  function slicePage(list, page) {
+    const start = (page - 1) * PAGE_SIZE;
+    return list.slice(start, start + PAGE_SIZE);
+  }
+
+  function buildPageRange(current, totalPages) {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages = new Set([1, totalPages, current, current - 1, current + 1]);
+    const sorted = [...pages]
+      .filter((p) => p >= 1 && p <= totalPages)
+      .sort((a, b) => a - b);
+    const result = [];
+    for (let i = 0; i < sorted.length; i += 1) {
+      if (i > 0 && sorted[i] - sorted[i - 1] > 1) result.push('…');
+      result.push(sorted[i]);
+    }
+    return result;
+  }
+
   function renderActiveStatusCell(pokemon, canEditActive) {
     if (canEditActive) {
       const checked = pokemon.enabled ? ' checked' : '';
@@ -98,30 +167,13 @@
     return `<td class="pokedex-table__status pokedex-table__status--readonly" title="Modifiable uniquement avant le démarrage du draft">${statutCol}</td>`;
   }
 
-  function renderActiveToggleButton(pokemon, canEditActive) {
-    if (!canEditActive) {
-      const statut = pokemon.enabled ? 'Actif' : 'Inactif';
-      return `<p class="pokedex-detail__status pokedex-detail__status--readonly" title="Modifiable uniquement avant le démarrage du draft">Statut : ${statut}</p>`;
-    }
-    const label = pokemon.enabled ? 'Désactiver' : 'Activer';
-    const actionClass = pokemon.enabled
-      ? 'pokedex-detail__toggle--deactivate'
-      : 'pokedex-detail__toggle--activate';
-    return `<button type="button" class="pokedex-detail__toggle ${actionClass}" data-pokemon-id="${escapeAttr(pokemon.id)}" aria-pressed="${pokemon.enabled ? 'true' : 'false'}">${label}</button>`;
-  }
-
-  function renderTable(container, list, selectedId, canEditActive) {
+  function renderTable(container, list, canEditActive) {
     const rows = list
       .map((p) => {
-        const rowClass = [
-          !p.enabled ? 'row-inactif' : '',
-          selectedId === p.id ? 'pokedex-row--selected' : '',
-        ]
-          .filter(Boolean)
-          .join(' ');
+        const rowClass = !p.enabled ? 'row-inactif' : '';
         const bst = global.PokemonSpecies.getBaseTotal(p);
         const megaCol = p.isMega ? 'Oui' : '—';
-        return `<tr class="${rowClass}" data-pokemon-id="${escapeAttr(p.id)}">
+        return `<tr class="${rowClass}">
           <td>${escapeHtml(p.pokedexId)}</td>
           <td>${spriteImg(p)}</td>
           <td>${escapeHtml(p.name)}</td>
@@ -175,67 +227,139 @@
       .replace(/>/g, '&gt;');
   }
 
-  function renderDetailPanel(pokemon, canEditActive) {
-    if (!pokemon) return '';
-    const bst = global.PokemonSpecies.getBaseTotal(pokemon);
-    const statRows = [
-      { label: 'BST', value: bst },
-      { label: 'PV', value: pokemon.hp },
-      { label: 'Attaque', value: pokemon.attack },
-      { label: 'Défense', value: pokemon.defense },
-      { label: 'Atq. Spé.', value: pokemon.spAtk },
-      { label: 'Déf. Spé.', value: pokemon.spDef },
-      { label: 'Vitesse', value: pokemon.speed },
-    ]
-      .map(
-        (s) =>
-          `<div class="pokedex-stats-grid__item"><span class="pokedex-stats-grid__label">${s.label}</span><span class="pokedex-stats-grid__value">${s.value}</span></div>`
-      )
+  function renderPagination(container, meta) {
+    const { page, totalPages, totalItems, rangeStart, rangeEnd } = meta;
+    const pageRange = buildPageRange(page, totalPages);
+    const rangeLabel =
+      totalItems === 0
+        ? 'Aucun résultat'
+        : `${rangeStart}–${rangeEnd} sur ${totalItems}`;
+
+    const pageButtons = pageRange
+      .map((item) => {
+        if (item === '…') {
+          return '<span class="pokedex-pagination__gap" aria-hidden="true">…</span>';
+        }
+        const active = item === page ? ' pokedex-page-btn--active' : '';
+        const ariaCurrent = item === page ? ' aria-current="page"' : '';
+        return `<button type="button" class="pokedex-page-btn${active}" data-pokedex-page="${item}"${ariaCurrent}>${item}</button>`;
+      })
       .join('');
-    const abilitiesHtml = global.PokemonSpecies.renderAbilitiesList(pokemon, {
-      listClass: 'ability-list',
-      itemClass: 'ability-list__item',
-      hiddenClass: 'ability-list__item--hidden',
-    });
+
+    container.innerHTML = `
+      <nav class="pokedex-pagination" aria-label="Pagination du Pokédex">
+        <span class="pokedex-pagination__range">${rangeLabel}</span>
+        <div class="pokedex-pagination__nav" role="group" aria-label="Pages">
+          <button type="button" class="pokedex-page-btn pokedex-page-btn--edge" data-pokedex-page="first" aria-label="Première page"${page <= 1 ? ' disabled' : ''}>«</button>
+          <button type="button" class="pokedex-page-btn pokedex-page-btn--edge" data-pokedex-page="prev" aria-label="Page précédente"${page <= 1 ? ' disabled' : ''}>‹</button>
+          <div class="pokedex-pagination__pages">${pageButtons}</div>
+          <button type="button" class="pokedex-page-btn pokedex-page-btn--edge" data-pokedex-page="next" aria-label="Page suivante"${page >= totalPages ? ' disabled' : ''}>›</button>
+          <button type="button" class="pokedex-page-btn pokedex-page-btn--edge" data-pokedex-page="last" aria-label="Dernière page"${page >= totalPages ? ' disabled' : ''}>»</button>
+        </div>
+        <label class="pokedex-pagination__jump">
+          <span>Aller à</span>
+          <input type="number" id="pokedex-page-jump" min="1" max="${totalPages}" value="${page}" inputmode="numeric" aria-label="Numéro de page">
+          <span>/ ${totalPages}</span>
+        </label>
+      </nav>`;
+  }
+
+  function renderTypeFilterTriggerContent(typeFilters) {
+    const selected = normalizeTypeFilters({ typeFilters });
+    if (!selected.length) {
+      return '<span class="pokedex-type-filter__option-label">Tous les types</span>';
+    }
+    return `<span class="pokedex-type-filter__value-badges">${selected
+      .map((slug) => renderTypeBadge(slug))
+      .join('')}</span>`;
+  }
+
+  function renderTypeFilterMenu(typeFilters) {
+    const selected = normalizeTypeFilters({ typeFilters });
+    const maxReached = selected.length >= MAX_TYPE_FILTERS;
+    const typeOptions = getAllTypeSlugs()
+      .map((slug) => {
+        const isSelected = selected.includes(slug);
+        const locked = maxReached && !isSelected;
+        const pressed = isSelected ? 'true' : 'false';
+        const lockedClass = locked ? ' pokedex-type-filter__option--locked' : '';
+        const label = global.TypeDisplay?.displayLabel(slug) || slug;
+        return `<button type="button" class="pokedex-type-filter__option${lockedClass}" data-pokedex-type-value="${escapeAttr(slug)}" aria-pressed="${pressed}" aria-label="${escapeAttr(label)}"${locked ? ' disabled' : ''}>${renderTypeBadge(slug)}</button>`;
+      })
+      .join('');
+    const clearDisabled = selected.length ? '' : ' disabled';
     return `
-      <div class="pokedex-detail">
-        <div class="pokedex-detail__header">
-          <div class="pokedex-detail__sprite">${spriteImg(pokemon)}</div>
-          <div class="pokedex-detail__title">
-            <h3>${escapeHtml(pokemon.name)}</h3>
-            <div class="pokedex-detail__dex">${escapeHtml(pokemon.pokedexId)}</div>
-            <div class="pokedex-detail__types">
-              ${renderTypeBadge(pokemon.type1)}
-              ${renderTypeBadge(pokemon.type2 || '')}
-            </div>
-          </div>
-        </div>
-        <div class="pokedex-detail__stats">
-          <h4>Statistiques</h4>
-          <div class="pokedex-stats-grid">${statRows}</div>
-        </div>
-        <div class="pokedex-detail__abilities">
-          <h4>Abilities</h4>
-          ${abilitiesHtml || '<p class="pokedex-detail__empty">Aucune habileté.</p>'}
-        </div>
-        <div class="pokedex-detail__pool">
-          ${renderActiveToggleButton(pokemon, canEditActive)}
-        </div>
+      <div class="pokedex-type-filter__menu-head">
+        <span class="pokedex-type-filter__hint">Sélectionnez jusqu'à ${MAX_TYPE_FILTERS} types</span>
+        <button type="button" class="pokedex-type-filter__clear" data-pokedex-type-clear${clearDisabled}>Tout effacer</button>
+      </div>
+      <div class="pokedex-type-filter__grid" role="group" aria-label="Types Pokémon">
+        ${typeOptions}
       </div>`;
+  }
+
+  function setTypeFilterMenuOpen(wrap, open) {
+    if (!wrap) return;
+    const menu = wrap.querySelector('.pokedex-type-filter__menu');
+    const trigger = wrap.querySelector('.pokedex-type-filter__trigger');
+    if (!menu || !trigger) return;
+    menu.hidden = !open;
+    trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function closeAllTypeFilterMenus(root) {
+    root.querySelectorAll('.pokedex-type-filter').forEach((wrap) => setTypeFilterMenuOpen(wrap, false));
   }
 
   function renderHeaderControls(filters) {
     const enabledFilter = filters.enabledFilter || 'all';
+    const typeFilters = normalizeTypeFilters(filters);
     const actions = document.createElement('div');
     actions.className = 'pokedex-header__actions';
     actions.innerHTML = `
           <input type="search" id="pokedex-search" placeholder="Nom ou # Pokédex…" value="${escapeAttr(filters.search || '')}">
+          <div class="pokedex-type-filter" id="pokedex-type-filter">
+            <button type="button" class="pokedex-type-filter__trigger" id="pokedex-type-filter-trigger" aria-haspopup="true" aria-expanded="false" aria-label="Filtrer par type">
+              <span class="pokedex-type-filter__value">${renderTypeFilterTriggerContent(typeFilters)}</span>
+              <span class="pokedex-type-filter__caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="pokedex-type-filter__menu" hidden>
+              ${renderTypeFilterMenu(typeFilters)}
+            </div>
+          </div>
           <select id="pokedex-enabled-filter" aria-label="Filtrer par statut">
             <option value="all"${enabledFilter === 'all' ? ' selected' : ''}>Tous</option>
             <option value="active"${enabledFilter === 'active' ? ' selected' : ''}>Actif</option>
             <option value="inactive"${enabledFilter === 'inactive' ? ' selected' : ''}>Inactif</option>
           </select>`;
     return actions;
+  }
+
+  function syncHeaderControls(headerEl, filters) {
+    const typeFilters = normalizeTypeFilters(filters);
+    const enabledFilter = filters.enabledFilter || 'all';
+    const searchInput = headerEl.querySelector('#pokedex-search');
+    const typeFilterWrap = headerEl.querySelector('#pokedex-type-filter');
+    const filterSelect = headerEl.querySelector('#pokedex-enabled-filter');
+
+    if (searchInput && searchInput !== document.activeElement) {
+      searchInput.value = filters.search || '';
+    }
+    if (typeFilterWrap) {
+      const menu = typeFilterWrap.querySelector('.pokedex-type-filter__menu');
+      const trigger = typeFilterWrap.querySelector('.pokedex-type-filter__trigger');
+      const wasOpen = menu && !menu.hidden;
+      const valueEl = typeFilterWrap.querySelector('.pokedex-type-filter__value');
+      if (valueEl) valueEl.innerHTML = renderTypeFilterTriggerContent(typeFilters);
+      if (menu) menu.innerHTML = renderTypeFilterMenu(typeFilters);
+      if (wasOpen && menu && trigger) {
+        menu.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+    }
+    if (filterSelect && filterSelect !== document.activeElement) {
+      filterSelect.value = enabledFilter;
+    }
   }
 
   function renderHeader(headerEl, poolData, filters, list) {
@@ -260,7 +384,12 @@
       top = headerEl.querySelector('.pokedex-header__top');
     }
 
-    if (!headerEl.querySelector('#pokedex-search')) {
+    if (
+      !headerEl.querySelector('#pokedex-search') ||
+      !headerEl.querySelector('#pokedex-type-filter') ||
+      !headerEl.querySelector('.pokedex-type-filter__grid')
+    ) {
+      headerEl.querySelector('.pokedex-header__actions')?.remove();
       top.appendChild(renderHeaderControls(filters));
     }
 
@@ -269,14 +398,7 @@
     if (titleEl) titleEl.textContent = `${league}${label}`;
     if (countEl) countEl.textContent = countLine;
 
-    const searchInput = headerEl.querySelector('#pokedex-search');
-    const filterSelect = headerEl.querySelector('#pokedex-enabled-filter');
-    if (searchInput && searchInput !== document.activeElement) {
-      searchInput.value = filters.search || '';
-    }
-    if (filterSelect && filterSelect !== document.activeElement) {
-      filterSelect.value = filters.enabledFilter || 'all';
-    }
+    syncHeaderControls(headerEl, filters);
   }
 
   function render(root, poolData, uiState, options) {
@@ -291,6 +413,8 @@
       sortKey: 'name',
       sortDir: 'asc',
       enabledFilter: 'all',
+      typeFilters: [],
+      page: 1,
     };
 
     if (!pool.length) {
@@ -310,6 +434,8 @@
     }
 
     const list = filterList(pool, filters);
+    const meta = getPaginationMeta(list.length, filters.page);
+    filters.page = meta.page;
 
     if (headerEl) renderHeader(headerEl, poolData, filters, list);
 
@@ -320,25 +446,14 @@
       return;
     }
 
-    const selectedId = uiState.pokedexSelectedId || null;
-    const selectedPokemon = selectedId
-      ? list.find((p) => p.id === selectedId) || pool.find((p) => p.id === selectedId)
-      : null;
+    const pageList = slicePage(list, meta.page);
 
-    contentEl.innerHTML = '<div class="pokedex-table-wrap"></div>';
-    renderTable(
-      contentEl.querySelector('.pokedex-table-wrap'),
-      list,
-      selectedPokemon?.id || null,
-      canEditActive
-    );
+    contentEl.innerHTML = `
+      <div class="pokedex-toolbar"></div>
+      <div class="pokedex-table-wrap"></div>`;
 
-    if (selectedPokemon) {
-      contentEl.insertAdjacentHTML(
-        'beforeend',
-        renderDetailPanel(selectedPokemon, canEditActive)
-      );
-    }
+    renderPagination(contentEl.querySelector('.pokedex-toolbar'), meta);
+    renderTable(contentEl.querySelector('.pokedex-table-wrap'), pageList, canEditActive);
   }
 
   function bindFilters(root, onChange) {
@@ -347,28 +462,60 @@
       if (id === 'pokedex-search') onChange(e);
     });
     root.addEventListener('change', (e) => {
-      if (e.target.id === 'pokedex-enabled-filter') onChange(e);
+      const id = e.target.id;
+      if (id === 'pokedex-enabled-filter' || id === 'pokedex-page-jump') {
+        onChange(e);
+      }
+    });
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeAllTypeFilterMenus(root);
+        return;
+      }
+      if (e.target.id === 'pokedex-page-jump' && e.key === 'Enter') {
+        e.preventDefault();
+        onChange(e);
+      }
     });
     root.addEventListener('click', (e) => {
+      const clearTypes = e.target.closest('[data-pokedex-type-clear]');
+      if (clearTypes && !clearTypes.disabled) {
+        e.preventDefault();
+        onChange(e, { typeFilterClear: true });
+        return;
+      }
+      const typeOption = e.target.closest('[data-pokedex-type-value]');
+      if (typeOption && !typeOption.disabled) {
+        e.preventDefault();
+        onChange(e, { typeFilterToggle: typeOption.dataset.pokedexTypeValue });
+        return;
+      }
+      const typeTrigger = e.target.closest('#pokedex-type-filter-trigger');
+      if (typeTrigger) {
+        e.preventDefault();
+        const wrap = typeTrigger.closest('.pokedex-type-filter');
+        const menu = wrap?.querySelector('.pokedex-type-filter__menu');
+        const willOpen = !!menu?.hidden;
+        closeAllTypeFilterMenus(root);
+        if (wrap && willOpen) setTypeFilterMenuOpen(wrap, true);
+        return;
+      }
+      if (!e.target.closest('.pokedex-type-filter')) {
+        closeAllTypeFilterMenus(root);
+      }
       if (e.target.closest('.pokedex-active-toggle')) {
         e.stopPropagation();
         return;
       }
-      const toggleBtn = e.target.closest('.pokedex-detail__toggle');
-      if (toggleBtn?.dataset.pokemonId) {
+      const pageBtn = e.target.closest('[data-pokedex-page]');
+      if (pageBtn && !pageBtn.disabled) {
         e.preventDefault();
-        e.stopPropagation();
-        onChange(e, { toggleId: toggleBtn.dataset.pokemonId });
+        onChange(e, { pageNav: pageBtn.dataset.pokedexPage });
         return;
       }
       const th = e.target.closest('th.sortable');
       if (th) {
         onChange(e, { sortKey: th.dataset.sort });
-        return;
-      }
-      const row = e.target.closest('tr[data-pokemon-id]');
-      if (row) {
-        onChange(e, { pokemonId: row.dataset.pokemonId });
       }
     });
     root.addEventListener('change', (e) => {
@@ -382,9 +529,12 @@
 
   global.PokedexView = {
     PLACEHOLDER,
+    PAGE_SIZE,
+    MAX_TYPE_FILTERS,
     typeClass,
     render,
     bindFilters,
     filterList,
+    normalizeTypeFilters,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
