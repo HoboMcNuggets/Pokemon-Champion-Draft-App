@@ -250,13 +250,52 @@
 
 
 
+  function getPlayerBans(state, playerIndex) {
+
+    return (state.bans || []).filter((b) => b.playerIndex === playerIndex);
+
+  }
+
+
+
+  /** 'any' | 'pokemon' | 'mega' | 'none' — type de ban requis pour le prochain ban du joueur. */
+  function getRequiredBanKind(state, playerIndex) {
+
+    const playerBans = getPlayerBans(state, playerIndex);
+
+    if (playerBans.length === 0) return 'any';
+
+    if (playerBans.length >= BANS_PER_PLAYER) return 'none';
+
+    const firstWasMega = playerBans[0].isMega === true;
+
+    return firstWasMega ? 'pokemon' : 'mega';
+
+  }
+
+
+
   function canBan(pokemon, state) {
 
     if (!pokemon || state.phase !== PHASE.BAN) return false;
 
     if (state.totalBansDone >= TOTAL_BANS) return false;
 
-    return global.PokemonSpecies.isSelectable(pokemon, state);
+    if (!global.PokemonSpecies.isSelectable(pokemon, state)) return false;
+
+    const playerIndex = getActivePlayerIndex(state);
+
+    const requiredKind = getRequiredBanKind(state, playerIndex);
+
+    if (requiredKind === 'none') return false;
+
+    const isMega = pokemon.isMega === true;
+
+    if (requiredKind === 'mega') return isMega;
+
+    if (requiredKind === 'pokemon') return !isMega;
+
+    return true;
 
   }
 
@@ -1517,6 +1556,10 @@
     startDraft,
 
     findPokemon,
+
+    getPlayerBans,
+
+    getRequiredBanKind,
 
     canBan,
 

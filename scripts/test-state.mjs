@@ -64,6 +64,28 @@ function assert(cond, msg) {
 
 
 
+function findBanCandidate(state, poolData) {
+
+  const active = DraftState.getActivePlayerIndex(state);
+
+  const kind = DraftState.getRequiredBanKind(state, active);
+
+  return poolData.pokemon.find((p) => {
+
+    if (!p.enabled || !PokemonSpecies.isSelectable(p, state)) return false;
+
+    if (kind === 'mega') return p.isMega === true;
+
+    if (kind === 'pokemon') return p.isMega !== true;
+
+    return true;
+
+  });
+
+}
+
+
+
 assert(DraftState.PICKS_PER_PLAYER === 8, '8 picks par joueur');
 
 assert(DraftState.TOTAL_PICKS === 64, '64 picks total');
@@ -141,6 +163,74 @@ assert(state.phase === PHASE.BAN, 'undo ban reste en phase ban');
 
 
 
+assert(DraftState.getRequiredBanKind(state, 0) === 'any', '0 ban joueur → any');
+
+
+
+let quotaState = DraftState.startDraft(DraftState.createInitialState());
+
+quotaState = DraftState.applyBan(quotaState, mega, pool);
+
+for (let i = 0; i < 7; i++) {
+
+  const c = findBanCandidate(quotaState, poolLarge);
+
+  assert(c, `candidat ban intermédiaire ${i}`);
+
+  quotaState = DraftState.applyBan(quotaState, c, poolLarge);
+
+}
+
+assert(DraftState.getActivePlayerIndex(quotaState) === 0, 'retour J0 pour 2e ban');
+
+assert(DraftState.getRequiredBanKind(quotaState, 0) === 'pokemon', 'J0 2e ban → pokemon');
+
+assert(!DraftState.canBan(mega, quotaState), 'J0 refuse 2e méga');
+
+const baseCandidate = poolLarge.pokemon.find(
+
+  (p) => p.enabled && !p.isMega && DraftState.canBan(p, quotaState)
+
+);
+
+assert(baseCandidate, 'J0 accepte pokémon base au 2e ban');
+
+
+
+const baseFirst = pool.pokemon.find((p) => p.id === '0006');
+
+let quotaState2 = DraftState.startDraft(DraftState.createInitialState());
+
+assert(baseFirst, 'forme de base disponible dans le pool exemple');
+
+quotaState2 = DraftState.applyBan(quotaState2, baseFirst, pool);
+
+for (let i = 0; i < 7; i++) {
+
+  const c = findBanCandidate(quotaState2, poolLarge);
+
+  assert(c, `candidat ban intermédiaire inverse ${i}`);
+
+  quotaState2 = DraftState.applyBan(quotaState2, c, poolLarge);
+
+}
+
+assert(DraftState.getRequiredBanKind(quotaState2, 0) === 'mega', 'J0 2e ban → mega');
+
+const someMega = poolLarge.pokemon.find(
+
+  (p) => p.enabled && p.isMega === true && PokemonSpecies.isSelectable(p, quotaState2)
+
+);
+
+assert(someMega && DraftState.canBan(someMega, quotaState2), 'J0 accepte méga au 2e ban');
+
+const otherBase = pool.pokemon.find((p) => p.enabled && !p.isMega && p.id !== baseFirst.id);
+
+assert(otherBase && !DraftState.canBan(otherBase, quotaState2), 'J0 refuse 2e pokémon base');
+
+
+
 const charizard = pool.pokemon.find((p) => p.id === '0006');
 
 const megaCharizardX = pool.pokemon.find((p) => p.id === '0006-m-x');
@@ -194,9 +284,7 @@ assert(!PokemonSpecies.isSelectable(megaCharizardY, megaYPickState), 'pick méga
 state = DraftState.startDraft(state);
 for (let i = 0; i < DraftState.TOTAL_BANS; i++) {
   const active = DraftState.getActivePlayerIndex(state);
-  const candidate = poolLarge.pokemon.find(
-    (p) => p.enabled && PokemonSpecies.isSelectable(p, state)
-  );
+  const candidate = findBanCandidate(state, poolLarge);
   assert(candidate, `candidat ban ${i}`);
   assert(active === DraftState.getBanPlayerIndex(state.totalBansDone), `joueur actif ban ${i}`);
   state = DraftState.applyBan(state, candidate, poolLarge);
@@ -223,9 +311,7 @@ assert(state.teams.every((t) => t.length === 8), '8 picks par joueur');
 
 let pickTest = DraftState.startDraft(DraftState.createInitialState());
 for (let i = 0; i < DraftState.TOTAL_BANS; i++) {
-  const c = poolLarge.pokemon.find(
-    (p) => p.enabled && PokemonSpecies.isSelectable(p, pickTest)
-  );
+  const c = findBanCandidate(pickTest, poolLarge);
   pickTest = DraftState.applyBan(pickTest, c, poolLarge);
 }
 const active0 = DraftState.getActivePlayerIndex(pickTest);

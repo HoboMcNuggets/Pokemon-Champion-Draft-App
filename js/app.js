@@ -144,7 +144,7 @@
       return 'Renommez les joueurs dans la grille, passez en mode Stream, puis démarrez le draft.';
     }
     if (state.phase === PHASE.BAN) {
-      return 'Bans en 2 tours (J1→J8, puis J1→J8) : recherchez, puis Bannir pour le joueur en cours.';
+      return 'Chaque joueur bannit 1 Pokémon et 1 Méga (ordre libre), en 2 tours J1→J8 puis J1→J8 : recherchez, puis Bannir pour le joueur en cours.';
     }
     if (state.phase === PHASE.DRAFT) {
       return '';
@@ -292,7 +292,11 @@
 
   function getSearchCandidates() {
     if (!poolData || !isPlayingPhase()) return [];
-    return PokemonSpecies.filterSelectable(poolData.pokemon, state);
+    const selectable = PokemonSpecies.filterSelectable(poolData.pokemon, state);
+    if (state.phase === PHASE.BAN) {
+      return selectable.filter((p) => DraftState.canBan(p, state));
+    }
+    return selectable;
   }
 
   function clearPokemonSearch() {
@@ -358,8 +362,11 @@
     let candidates = getSearchCandidates();
 
     if (state.selectedPokemonId && poolData) {
-      const stillExists = !!DraftState.findPokemon(poolData, state.selectedPokemonId);
-      if (!stillExists) {
+      const selected = DraftState.findPokemon(poolData, state.selectedPokemonId);
+      const stillValid =
+        selected &&
+        (state.phase !== PHASE.BAN || DraftState.canBan(selected, state));
+      if (!stillValid) {
         state = { ...state, selectedPokemonId: null };
       }
     }
@@ -812,7 +819,15 @@
     if (!pokemon) return;
 
     if (!DraftState.canBan(pokemon, state)) {
-      showMessage('Ce Pokémon ne peut pas être banni.', 'error');
+      const playerIndex = DraftState.getActivePlayerIndex(state);
+      const requiredKind = DraftState.getRequiredBanKind(state, playerIndex);
+      if (requiredKind === 'pokemon') {
+        showMessage('Ce joueur doit bannir un Pokémon (forme de base).', 'error');
+      } else if (requiredKind === 'mega') {
+        showMessage('Ce joueur doit bannir une Méga.', 'error');
+      } else {
+        showMessage('Ce Pokémon ne peut pas être banni.', 'error');
+      }
       return;
     }
 

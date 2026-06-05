@@ -325,7 +325,14 @@
       if (active >= 0 && state.phase === PHASE.BAN) {
         const n = state.totalBansDone + 1;
         const tour = DraftState.getBanRound(state.totalBansDone);
-        nowEl.textContent = `Phase de ban - ${state.players[active].name} · Tour ${tour} · ${n}/${DraftState.TOTAL_BANS}`;
+        const requiredKind = DraftState.getRequiredBanKind(state, active);
+        const kindLabel =
+          requiredKind === 'mega'
+            ? ' · Ban Méga requis'
+            : requiredKind === 'pokemon'
+              ? ' · Ban Pokémon requis'
+              : '';
+        nowEl.textContent = `Phase de ban - ${state.players[active].name} · Tour ${tour}${kindLabel} · ${n}/${DraftState.TOTAL_BANS}`;
       } else if (active >= 0 && state.phase === PHASE.DRAFT) {
         const n = state.totalPicksDone + 1;
         nowEl.textContent = `Phase de choix - ${state.players[active].name} · ${n}/${DraftState.TOTAL_PICKS}`;

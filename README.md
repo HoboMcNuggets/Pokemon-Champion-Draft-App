@@ -16,7 +16,7 @@ Application HTML / JavaScript pour animer un draft Pokémon à 8 joueurs (bans e
 
 ## Flux bans + draft
 
-1. **Phase bans** (16 bans) : chaque joueur bannit 2 Pokémon. **Tour 1** : J1→J8, **tour 2** : J1→J8 (ordre linéaire, pas de snake).
+1. **Phase bans** (16 bans) : chaque joueur bannit **1 Pokémon** (forme de base) et **1 Méga**, dans l’ordre de son choix. **Tour 1** : J1→J8, **tour 2** : J1→J8 (ordre linéaire, pas de snake).
 2. **Phase draft** (64 picks, snake) : 8 tours de 8 picks. Ordre alterné comme les bans (aller / retour).
 3. **Bans** : un ban **méga** retire uniquement cette forme (les autres méga et la base restent disponibles) ; un ban sur la **forme de base** retire toute la famille (`speciesKey`). **Picks** : toute la famille est retirée du pool (même `speciesKey`).
 
