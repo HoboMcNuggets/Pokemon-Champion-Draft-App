@@ -600,36 +600,36 @@
 .stream-type-orb.type-feu { background: #ee8130; }
 .stream-type-orb.type-flying,
 .stream-type-orb.type-vol { background: #a8c8e8; color: #1a1a2e; text-shadow: none; }
-.stream-type-orb.type-dragon { background: #5060e1; }
+.stream-type-orb.type-dragon { background: #3d4cb8; }
 .stream-type-orb.type-water,
-.stream-type-orb.type-eau { background: #4592c4; }
+.stream-type-orb.type-eau { background: #2d6fa8; }
 .stream-type-orb.type-bug,
-.stream-type-orb.type-insecte { background: #91a119; }
+.stream-type-orb.type-insecte { background: #6d7a12; }
 .stream-type-orb.type-normal { background: #a8a878; }
 .stream-type-orb.type-electric,
 .stream-type-orb.type-electrik,
-.stream-type-orb.type-électrik { background: #f8d030; color: #1a1a2e; text-shadow: none; }
+.stream-type-orb.type-électrik { background: #8a7008; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); }
 .stream-type-orb.type-ground,
 .stream-type-orb.type-sol { background: #e2bf65; color: #1a1a2e; text-shadow: none; }
 .stream-type-orb.type-rock,
-.stream-type-orb.type-roche { background: #b6a136; }
+.stream-type-orb.type-roche { background: #8f7f3a; color: #1a1a2e; text-shadow: none; }
 .stream-type-orb.type-ice,
 .stream-type-orb.type-glace { background: #98d8d8; color: #1a1a2e; text-shadow: none; }
 .stream-type-orb.type-fighting,
 .stream-type-orb.type-combat { background: #c03028; }
 .stream-type-orb.type-psychic,
-.stream-type-orb.type-psy { background: #d04078; }
+.stream-type-orb.type-psy { background: #f85888; }
 .stream-type-orb.type-ghost,
 .stream-type-orb.type-spectre { background: #705898; }
 .stream-type-orb.type-dark,
 .stream-type-orb.type-tenebres,
-.stream-type-orb.type-ténèbres { background: #504538; }
+.stream-type-orb.type-ténèbres { background: #3a322c; }
 .stream-type-orb.type-steel,
 .stream-type-orb.type-acier { background: #b8b8d0; color: #1a1a2e; text-shadow: none; }
 .stream-type-orb.type-fairy,
 .stream-type-orb.type-fee,
-.stream-type-orb.type-fée { background: #ee99ac; color: #5a1a2e; text-shadow: none; }
-.stream-type-orb.type-stellar { background: #6ec8ff; color: #1a1a2e; text-shadow: none; }
+.stream-type-orb.type-fée { background: #d878c8; color: #1a1a2e; text-shadow: none; }
+.stream-type-orb.type-stellar { background: #3a9fd4; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
 
 .stream-stats {
   width: 100%;

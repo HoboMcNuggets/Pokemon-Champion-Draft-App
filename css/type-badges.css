@@ -31,9 +31,75 @@
   max-height: 11px;
 }
 
+.pokedex-table .type-electric .type-badge__icon,
+.pokedex-table .type-electrik .type-badge__icon,
+.pokedex-table .type-électrik .type-badge__icon,
+.pokedex-detail__types .type-electric .type-badge__icon,
+.pokedex-detail__types .type-electrik .type-badge__icon,
+.pokedex-detail__types .type-électrik .type-badge__icon {
+  width: 13px;
+  height: 13px;
+  max-width: 13px;
+  max-height: 13px;
+}
+
 .stream-type-orb__icon {
   width: 24px;
   height: 24px;
   flex-shrink: 0;
   object-fit: contain;
+}
+
+/* Contraste icône SVG / pastille — cercle proche du fond */
+.type-bug .type-badge__icon,
+.type-insecte .type-badge__icon,
+.type-water .type-badge__icon,
+.type-eau .type-badge__icon,
+.type-dark .type-badge__icon,
+.type-tenebres .type-badge__icon,
+.type-ténèbres .type-badge__icon,
+.type-dragon .type-badge__icon,
+.type-bug .stream-type-orb__icon,
+.type-insecte .stream-type-orb__icon,
+.type-water .stream-type-orb__icon,
+.type-eau .stream-type-orb__icon,
+.type-dark .stream-type-orb__icon,
+.type-tenebres .stream-type-orb__icon,
+.type-ténèbres .stream-type-orb__icon,
+.type-dragon .stream-type-orb__icon {
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+}
+
+.type-fairy .type-badge__icon,
+.type-fée .type-badge__icon,
+.type-fee .type-badge__icon,
+.type-rock .type-badge__icon,
+.type-roche .type-badge__icon,
+.type-stellar .type-badge__icon,
+.type-fairy .stream-type-orb__icon,
+.type-fée .stream-type-orb__icon,
+.type-fee .stream-type-orb__icon,
+.type-rock .stream-type-orb__icon,
+.type-roche .stream-type-orb__icon,
+.type-stellar .stream-type-orb__icon {
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px rgba(0, 0, 0, 0.4));
+}
+
+/* Électrik — cercle SVG #dfbc28 : pastille plus foncée + icône agrandie */
+.type-electric .type-badge__icon,
+.type-electrik .type-badge__icon,
+.type-électrik .type-badge__icon {
+  width: 13px;
+  height: 13px;
+  max-width: 13px;
+  max-height: 13px;
+  filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 3px rgba(0, 0, 0, 0.55));
+}
+
+.type-electric .stream-type-orb__icon,
+.type-electrik .stream-type-orb__icon,
+.type-électrik .stream-type-orb__icon {
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 3px rgba(0, 0, 0, 0.55));
 }

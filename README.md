@@ -88,3 +88,9 @@ node scripts/test-state.mjs
 ## Persistance
 
 `localStorage` : clé `pokemonDraft.v1` (draft), `pokemonDraft.theme` (thème), `pokemonDraft.timerDurationSec` (durée du timer, 10–600 s), `pokemonDraft.viewMode` (tableau de bord / stream). Le Pokédex complet n'est pas mis en cache (trop volumineux).
+
+## Développement / agents IA
+
+Pour la maintenance et les agents Cursor : **[AGENTS.md](AGENTS.md)** (carte des modules, pipeline de données, fichiers à ne pas indexer, scripts Node complets).
+
+Scripts additionnels non détaillés ci-dessus : `build-pool.mjs`, `patch-sprites-pokedex.mjs`, `check-mega-sprites.mjs`, `build-type-themes.mjs`, `test-recap.mjs` — voir le tableau dans `AGENTS.md`.
