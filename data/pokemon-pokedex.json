@@ -1309,7 +1309,7 @@
       "spDef": 90,
       "speed": 50,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/vileplume.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0045",
       "isMega": false,
       "abilities": [
@@ -6409,7 +6409,7 @@
       "spDef": 55,
       "speed": 85,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/qwilfish.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0211",
       "isMega": false,
       "abilities": [
@@ -7717,7 +7717,7 @@
       "spDef": 85,
       "speed": 120,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/sceptile.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0254",
       "isMega": false,
       "abilities": [
@@ -7801,7 +7801,7 @@
       "spDef": 70,
       "speed": 80,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/blaziken.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0257",
       "isMega": false,
       "abilities": [
@@ -7885,7 +7885,7 @@
       "spDef": 90,
       "speed": 60,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/swampert.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0260",
       "isMega": false,
       "abilities": [
@@ -9161,7 +9161,7 @@
       "spDef": 55,
       "speed": 50,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/mawile.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0303",
       "isMega": false,
       "abilities": [
@@ -11317,7 +11317,7 @@
       "spDef": 90,
       "speed": 70,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/metagross.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0376",
       "isMega": false,
       "abilities": [
@@ -11905,7 +11905,7 @@
       "spDef": 60,
       "speed": 100,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/staraptor.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0398",
       "isMega": false,
       "abilities": [
@@ -15417,7 +15417,7 @@
       "spDef": 95,
       "speed": 29,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/musharna.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0518",
       "isMega": false,
       "abilities": [
@@ -16281,7 +16281,7 @@
       "spDef": 69,
       "speed": 112,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/scolipede.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0545",
       "isMega": false,
       "abilities": [
@@ -16753,7 +16753,7 @@
       "spDef": 115,
       "speed": 58,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/scrafty.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0560",
       "isMega": false,
       "abilities": [
@@ -18073,7 +18073,7 @@
       "spDef": 80,
       "speed": 50,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/eelektross.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0604",
       "isMega": false,
       "abilities": [
@@ -19937,7 +19937,7 @@
       "spDef": 66,
       "speed": 106,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/pyroar.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0668",
       "isMega": false,
       "abilities": [
@@ -20477,7 +20477,7 @@
       "spDef": 75,
       "speed": 73,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/malamar.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0687",
       "isMega": false,
       "abilities": [
@@ -20541,7 +20541,7 @@
       "spDef": 86,
       "speed": 68,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/barbaracle.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0689",
       "isMega": false,
       "abilities": [
@@ -20605,7 +20605,7 @@
       "spDef": 123,
       "speed": 44,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/dragalge.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0691",
       "isMega": false,
       "abilities": [
@@ -25497,7 +25497,7 @@
       "spDef": 75,
       "speed": 60,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/grimmsnarl.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0861",
       "isMega": false,
       "abilities": [
@@ -25761,7 +25761,7 @@
       "spDef": 60,
       "speed": 75,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/falinks.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0870",
       "isMega": false,
       "abilities": [
@@ -26713,7 +26713,7 @@
       "spDef": 65,
       "speed": 85,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/overqwil.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0904",
       "isMega": false,
       "abilities": [
@@ -28505,7 +28505,7 @@
       "spDef": 62,
       "speed": 100,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/palafin.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0964",
       "isMega": false,
       "abilities": [
@@ -28725,7 +28725,7 @@
       "spDef": 97,
       "speed": 68,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/houndstone.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0972",
       "isMega": false,
       "abilities": [
@@ -28937,7 +28937,7 @@
       "spDef": 90,
       "speed": 90,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/annihilape.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0979",
       "isMega": false,
       "abilities": [
@@ -29493,7 +29493,7 @@
       "spDef": 91,
       "speed": 84,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/gholdengo.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#1000",
       "isMega": false,
       "abilities": [
@@ -31413,7 +31413,7 @@
       "spDef": 80,
       "speed": 100,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/blaziken-mega.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0257",
       "isMega": true,
       "abilities": [
@@ -31461,7 +31461,7 @@
       "spDef": 95,
       "speed": 50,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/mawile-mega.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0303",
       "isMega": true,
       "abilities": [
@@ -31677,7 +31677,7 @@
       "spDef": 128,
       "speed": 92,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/floette-eternal.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0670",
       "isMega": false,
       "abilities": [
@@ -31753,7 +31753,7 @@
       "spDef": 110,
       "speed": 70,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/swampert-mega.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0260",
       "isMega": true,
       "abilities": [
@@ -31777,7 +31777,7 @@
       "spDef": 85,
       "speed": 145,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/sceptile-mega.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0254",
       "isMega": true,
       "abilities": [
@@ -32041,7 +32041,7 @@
       "spDef": 110,
       "speed": 110,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/metagross-mega.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0376",
       "isMega": true,
       "abilities": [
@@ -37909,21 +37909,13 @@
       "spDef": 99,
       "speed": 62,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/scolipede.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0545",
       "isMega": true,
       "abilities": [
         {
-          "name": "Poison Point",
+          "name": "Shell Armor",
           "isHidden": false
-        },
-        {
-          "name": "Swarm",
-          "isHidden": false
-        },
-        {
-          "name": "Speed Boost",
-          "isHidden": true
         }
       ]
     },
@@ -37941,21 +37933,13 @@
       "spDef": 135,
       "speed": 68,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/scrafty.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0560",
       "isMega": true,
       "abilities": [
         {
-          "name": "Shed Skin",
-          "isHidden": false
-        },
-        {
-          "name": "Moxie",
-          "isHidden": false
-        },
-        {
           "name": "Intimidate",
-          "isHidden": true
+          "isHidden": false
         }
       ]
     },
@@ -37973,12 +37957,12 @@
       "spDef": 90,
       "speed": 80,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/eelektross.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0604",
       "isMega": true,
       "abilities": [
         {
-          "name": "Levitate",
+          "name": "Eelevate",
           "isHidden": false
         }
       ]
@@ -38093,21 +38077,13 @@
       "spDef": 86,
       "speed": 126,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/pyroar.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0668",
       "isMega": true,
       "abilities": [
         {
-          "name": "Rivalry",
+          "name": "Fire Mane",
           "isHidden": false
-        },
-        {
-          "name": "Unnerve",
-          "isHidden": false
-        },
-        {
-          "name": "Moxie",
-          "isHidden": true
         }
       ]
     },
@@ -38125,7 +38101,7 @@
       "spDef": 148,
       "speed": 102,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/gen5/floette-mega.png",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0670",
       "isMega": true,
       "abilities": [
@@ -38149,21 +38125,13 @@
       "spDef": 120,
       "speed": 88,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/malamar.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0687",
       "isMega": true,
       "abilities": [
         {
           "name": "Contrary",
           "isHidden": false
-        },
-        {
-          "name": "Suction Cups",
-          "isHidden": false
-        },
-        {
-          "name": "Infiltrator",
-          "isHidden": true
         }
       ]
     },
@@ -38181,21 +38149,13 @@
       "spDef": 106,
       "speed": 88,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/barbaracle.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0689",
       "isMega": true,
       "abilities": [
         {
           "name": "Tough Claws",
           "isHidden": false
-        },
-        {
-          "name": "Sniper",
-          "isHidden": false
-        },
-        {
-          "name": "Pickpocket",
-          "isHidden": true
         }
       ]
     },
@@ -38213,21 +38173,13 @@
       "spDef": 163,
       "speed": 44,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/dragalge.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0691",
       "isMega": true,
       "abilities": [
         {
-          "name": "Poison Point",
+          "name": "Regenerator",
           "isHidden": false
-        },
-        {
-          "name": "Poison Touch",
-          "isHidden": false
-        },
-        {
-          "name": "Adaptability",
-          "isHidden": true
         }
       ]
     },
@@ -38317,23 +38269,19 @@
       "spDef": 65,
       "speed": 100,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/falinks.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0870",
       "isMega": true,
       "abilities": [
         {
-          "name": "Battle Armor",
-          "isHidden": false
-        },
-        {
           "name": "Defiant",
-          "isHidden": true
+          "isHidden": false
         }
       ]
     },
     {
       "pokedexId": "#0026-M",
-      "id": "0026-m",
+      "id": "0026-m-x",
       "name": "Mega Raichu X",
       "type1": "Electric",
       "type2": "",
@@ -38345,23 +38293,19 @@
       "spDef": 95,
       "speed": 110,
       "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10304.png",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0026",
       "isMega": true,
       "abilities": [
         {
-          "name": "Static",
+          "name": "Electric Surge",
           "isHidden": false
-        },
-        {
-          "name": "Lightning Rod",
-          "isHidden": true
         }
       ]
     },
     {
       "pokedexId": "#0026-M",
-      "id": "0026-m-p10305",
+      "id": "0026-m-y",
       "name": "Mega Raichu Y",
       "type1": "Electric",
       "type2": "",
@@ -38373,17 +38317,13 @@
       "spDef": 80,
       "speed": 130,
       "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10305.png",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0026",
       "isMega": true,
       "abilities": [
         {
-          "name": "Static",
+          "name": "No Guard",
           "isHidden": false
-        },
-        {
-          "name": "Lightning Rod",
-          "isHidden": true
         }
       ]
     },
@@ -38449,17 +38389,13 @@
       "spDef": 90,
       "speed": 110,
       "spriteUrl": "https://play.pokemonshowdown.com/sprites/ani/staraptor.gif",
-      "enabled": false,
+      "enabled": true,
       "speciesKey": "#0398",
       "isMega": true,
       "abilities": [
         {
-          "name": "Intimidate",
+          "name": "Contrary",
           "isHidden": false
-        },
-        {
-          "name": "Reckless",
-          "isHidden": true
         }
       ]
     },

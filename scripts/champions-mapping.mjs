@@ -8,6 +8,7 @@ export const MATCH_ALIASES = [
   ['tauros (paldean blaze)', 'tauros (paldean - blaze)'],
   ['tauros (paldean aqua)', 'tauros (paldean - aqua)'],
   ['palafin (zero)', 'palafin'],
+  ['pyroar', 'pyroar (male)'],
 ];
 
 /** Noms actifs forcés même si enabled:false dans champions-s1 (historique). */
@@ -64,6 +65,9 @@ export function applyChampionsOverlay(entry, old) {
   if (old.baseTotal != null) entry.baseTotal = old.baseTotal;
   for (const k of ['hp', 'attack', 'defense', 'spAtk', 'spDef', 'speed']) {
     if (old[k] != null) entry[k] = old[k];
+  }
+  if (Array.isArray(old.abilities) && old.abilities.length > 0) {
+    entry.abilities = old.abilities.map((a) => ({ ...a }));
   }
   return entry;
 }

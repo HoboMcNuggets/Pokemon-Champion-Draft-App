@@ -270,16 +270,29 @@ assert(!PokemonSpecies.isSelectable(megaY, pickState), 'pick charizard bloque m�
 let megaPickState = DraftState.startDraft(DraftState.createInitialState());
 megaPickState = { ...megaPickState, phase: PHASE.DRAFT, totalBansDone: DraftState.TOTAL_BANS };
 megaPickState = DraftState.assignPick(megaPickState, 0, megaX, pool);
-assert(PokemonSpecies.isSelectable(charizard, megaPickState), 'pick méga X : Charizard dispo');
+assert(!PokemonSpecies.isSelectable(charizard, megaPickState), 'pick méga X : Charizard indispo');
 assert(!PokemonSpecies.isSelectable(megaY, megaPickState), 'pick méga X : méga Y indispo');
 assert(!PokemonSpecies.isSelectable(megaX, megaPickState), 'pick méga X : méga X indispo');
 
 let megaYPickState = DraftState.startDraft(DraftState.createInitialState());
 megaYPickState = { ...megaYPickState, phase: PHASE.DRAFT, totalBansDone: DraftState.TOTAL_BANS };
 megaYPickState = DraftState.assignPick(megaYPickState, 0, megaCharizardY, pool);
-assert(PokemonSpecies.isSelectable(charizard, megaYPickState), 'pick méga Y : Charizard dispo');
+assert(!PokemonSpecies.isSelectable(charizard, megaYPickState), 'pick méga Y : Charizard indispo');
 assert(!PokemonSpecies.isSelectable(megaX, megaYPickState), 'pick méga Y : méga X indispo');
 assert(!PokemonSpecies.isSelectable(megaCharizardY, megaYPickState), 'pick méga Y : méga Y indispo');
+
+const raichu = poolLarge.pokemon.find((p) => p.id === '0026');
+const megaRaichuX = poolLarge.pokemon.find((p) => p.id === '0026-m-x');
+const megaRaichuY = poolLarge.pokemon.find((p) => p.id === '0026-m-y');
+if (raichu && megaRaichuX && megaRaichuY) {
+  let raichuMegaPick = DraftState.startDraft(DraftState.createInitialState());
+  raichuMegaPick = { ...raichuMegaPick, phase: PHASE.DRAFT, totalBansDone: DraftState.TOTAL_BANS };
+  raichuMegaPick = DraftState.assignPick(raichuMegaPick, 0, megaRaichuX, poolLarge);
+  assert(!PokemonSpecies.isSelectable(raichu, raichuMegaPick), 'pick méga Raichu X : Raichu indispo');
+  assert(!PokemonSpecies.isSelectable(megaRaichuY, raichuMegaPick), 'pick méga Raichu X : méga Y indispo');
+  assert(megaRaichuX.abilities?.[0]?.name === 'Electric Surge', 'méga Raichu X : talent Champions');
+  assert(megaRaichuY.abilities?.[0]?.name === 'No Guard', 'méga Raichu Y : talent Champions');
+}
 
 state = DraftState.startDraft(state);
 for (let i = 0; i < DraftState.TOTAL_BANS; i++) {

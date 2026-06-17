@@ -44,6 +44,8 @@ export function buildId(pokedexId, name, counters) {
 
   if (/mega charizard y/i.test(name)) return `${num}-m-y`;
   if (/mega charizard x/i.test(name)) return `${num}-m-x`;
+  if (/mega raichu y/i.test(name)) return `${num}-m-y`;
+  if (/mega raichu x/i.test(name)) return `${num}-m-x`;
   if (isMega) return `${num}-m`;
 
   const paren = name.match(/\(([^)]+)\)/);
@@ -92,6 +94,8 @@ export function guessShowdownSpriteIds(name, isMega, apiSlug) {
 
   if (/mega charizard y/i.test(name)) candidates.push('charizard-megay');
   else if (/mega charizard x/i.test(name)) candidates.push('charizard-megax');
+  else if (/mega raichu y/i.test(name)) candidates.push('raichu-megay');
+  else if (/mega raichu x/i.test(name)) candidates.push('raichu-megax');
   else if (isMega) {
     const base = slugify(baseSpeciesName(name));
     if (base === 'meowstic') candidates.push('meowstic-mmega', 'meowstic-fmega');

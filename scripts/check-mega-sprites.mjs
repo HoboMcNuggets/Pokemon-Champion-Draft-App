@@ -29,6 +29,33 @@ const EXPECTED_MEGA_POKEDEX_IDS = [
   '#0970-M',
 ];
 
+/** Méga M-B : pokedexId seul insuffisant si plusieurs formes (ex. Raichu X/Y). */
+const EXPECTED_MEGA_ENTRIES = [
+  { pokedexId: '#0026-M', name: 'Mega Raichu X' },
+  { pokedexId: '#0026-M', name: 'Mega Raichu Y' },
+  { pokedexId: '#0254-M', name: 'Mega Sceptile' },
+  { pokedexId: '#0257-M', name: 'Mega Blaziken' },
+  { pokedexId: '#0260-M', name: 'Mega Swampert' },
+  { pokedexId: '#0303-M', name: 'Mega Mawile' },
+  { pokedexId: '#0376-M', name: 'Mega Metagross' },
+  { pokedexId: '#0398-M', name: 'Mega Staraptor' },
+  { pokedexId: '#0545-M', name: 'Mega Scolipede' },
+  { pokedexId: '#0560-M', name: 'Mega Scrafty' },
+  { pokedexId: '#0604-M', name: 'Mega Eelektross' },
+  { pokedexId: '#0668-M', name: 'Mega Pyroar' },
+  { pokedexId: '#0687-M', name: 'Mega Malamar' },
+  { pokedexId: '#0689-M', name: 'Mega Barbaracle' },
+  { pokedexId: '#0691-M', name: 'Mega Dragalge' },
+  { pokedexId: '#0870-M', name: 'Mega Falinks' },
+];
+
+function findMegaInPool(pool, spec) {
+  if (spec.name) {
+    return pool.pokemon.find((p) => p.pokedexId === spec.pokedexId && p.name === spec.name);
+  }
+  return pool.pokemon.find((p) => p.pokedexId === spec.pokedexId);
+}
+
 function isWrongBaseAniFallback(pokemon) {
   const url = pokemon.spriteUrl || '';
   if (!url.includes('/sprites/ani/')) return false;
@@ -48,49 +75,65 @@ async function headOk(url) {
   }
 }
 
+async function checkMega(pool, spec, label) {
+  const pokemon = findMegaInPool(pool, spec);
+  const pokedexId = spec.pokedexId;
+  const relaxed = Boolean(spec.name);
+  if (!pokemon) {
+    console.error(`✗ ${label} : absent du pool`);
+    return 1;
+  }
+
+  const { name, spriteUrl } = pokemon;
+
+  if (!relaxed && isWrongBaseAniFallback(pokemon)) {
+    console.error(`✗ ${label} ${name} : repli base animé (${spriteUrl})`);
+    return 1;
+  }
+
+  if (relaxed && isWrongBaseAniFallback(pokemon)) {
+    console.warn(`? ${label} ${name} : repli base animé (${spriteUrl})`);
+  }
+
+  if (
+    !relaxed &&
+    (!spriteUrl.includes('/sprites/gen5/') || !spriteUrl.includes('-mega'))
+  ) {
+    if (pokedexId === '#0678-M' && spriteUrl.includes('meowstic-mmega')) {
+      // ok
+    } else if (!spriteUrl.includes('/sprites/gen5/')) {
+      console.warn(`? ${label} ${name} : pas gen5 (${spriteUrl})`);
+    }
+  }
+
+  const ok = await headOk(spriteUrl);
+  if (!ok) {
+    console.error(`✗ ${label} ${name} : URL inaccessible (${spriteUrl})`);
+    return 1;
+  }
+
+  console.log(`✓ ${label} ${name} → ${spriteUrl}`);
+  return 0;
+}
+
 async function main() {
   const pool = JSON.parse(fs.readFileSync(POOL_JSON, 'utf8'));
   let errors = 0;
 
   for (const pokedexId of EXPECTED_MEGA_POKEDEX_IDS) {
-    const pokemon = pool.pokemon.find((p) => p.pokedexId === pokedexId);
-    if (!pokemon) {
-      console.error(`✗ ${pokedexId} : absent du pool`);
-      errors++;
-      continue;
-    }
+    errors += await checkMega(pool, { pokedexId }, pokedexId);
+  }
 
-    const { name, spriteUrl } = pokemon;
-
-    if (isWrongBaseAniFallback(pokemon)) {
-      console.error(`✗ ${pokedexId} ${name} : repli base animé (${spriteUrl})`);
-      errors++;
-      continue;
-    }
-
-    if (!spriteUrl.includes('/sprites/gen5/') || !spriteUrl.includes('-mega')) {
-      if (pokedexId === '#0678-M' && spriteUrl.includes('meowstic-mmega')) {
-        // ok
-      } else if (!spriteUrl.includes('/sprites/gen5/')) {
-        console.warn(`? ${pokedexId} ${name} : pas gen5 (${spriteUrl})`);
-      }
-    }
-
-    const ok = await headOk(spriteUrl);
-    if (!ok) {
-      console.error(`✗ ${pokedexId} ${name} : URL inaccessible (${spriteUrl})`);
-      errors++;
-      continue;
-    }
-
-    console.log(`✓ ${pokedexId} ${name} → ${spriteUrl}`);
+  for (const spec of EXPECTED_MEGA_ENTRIES) {
+    const label = spec.name ? `${spec.pokedexId} ${spec.name}` : spec.pokedexId;
+    errors += await checkMega(pool, spec, label);
   }
 
   if (errors > 0) {
     console.error(`\n${errors} erreur(s).`);
     process.exit(1);
   }
-  console.log('\nTous les sprites Méga Z-A sont valides.');
+  console.log('\nTous les sprites Méga vérifiés.');
 }
 
 main().catch((err) => {

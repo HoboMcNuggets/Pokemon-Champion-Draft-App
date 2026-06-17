@@ -47,6 +47,15 @@ Pour réappliquer uniquement les noms et le statut actif du pool Champions (sans
 node scripts/patch-pokedex-active.mjs
 ```
 
+Pour ajouter les Pokémon d'une nouvelle régulation au pool actif (ex. Regulation M-B) :
+
+```bash
+node scripts/patch-champions-regulation.mjs
+node scripts/patch-pokedex-active.mjs
+```
+
+Le fichier [`data/regulation-m-b.json`](data/regulation-m-b.json) liste les espèces et talents méga Champions à activer. Le pool actif est maintenu dans `data/pokemon-pool.champions-s1.json` (ne pas régénérer via `build-pool.mjs` sauf si le Google Sheet est à jour — ce script **écrase** le pool local).
+
 Pour régénérer le JS embarqué seul :
 
 ```bash
