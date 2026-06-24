@@ -24,8 +24,12 @@
       .map((ability) => {
         const label = global.PokemonSpecies.formatAbilityName(ability);
         if (!label) return '';
-        const hiddenClass = ability.isHidden ? ' pokedex-table-ability--hidden' : '';
-        return `<span class="pokedex-table-ability${hiddenClass}">${escapeHtml(label)}</span>`;
+        const hiddenClass = ability.isHidden ? 'pokedex-table-ability--hidden' : '';
+        return global.AbilityDisplay?.renderChip(ability, {
+          label,
+          chipClass: 'ability-chip pokedex-table-ability',
+          hiddenClass,
+        }) || `<span class="pokedex-table-ability${ability.isHidden ? ' pokedex-table-ability--hidden' : ''}">${escapeHtml(label)}</span>`;
       })
       .filter(Boolean)
       .join('');

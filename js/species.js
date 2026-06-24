@@ -285,7 +285,14 @@
           markHidden: distinguishHidden,
         });
 
-        return `<li class="${cls}">${escapeHtml(label)}</li>`;
+        const chip =
+          global.AbilityDisplay?.renderChip(ability, {
+            label,
+            hiddenClass:
+              distinguishHidden && ability.isHidden ? hiddenClass : '',
+          }) || escapeHtml(label);
+
+        return `<li class="${cls}">${chip}</li>`;
 
       })
 

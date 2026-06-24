@@ -2,7 +2,7 @@
  * Application draft Pokémon — opérateur stream.
  */
 (function () {
-  const { DraftState, SpriteImg, SpriteResolver } = window;
+  const { DraftState, SpriteImg, SpriteResolver, AbilityDisplay } = window;
   const PHASE = DraftState.PHASE;
   const { DraftStorage } = window;
   const { PoolImport } = window;
@@ -1809,7 +1809,11 @@
     initViewMode();
     placeMessageBar();
 
-    await SpriteResolver?.loadIndex?.();
+    await Promise.all([
+      SpriteResolver?.loadIndex?.(),
+      AbilityDisplay?.loadIndex?.(),
+    ]);
+    AbilityDisplay?.bindTooltips?.(document);
     renderAll();
 
     if (isFullPokedex(poolData)) return;

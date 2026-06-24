@@ -84,6 +84,12 @@
           if (typeof ability.isHidden !== 'boolean') {
             errors.push(`${abLabel} : "isHidden" doit être true ou false.`);
           }
+          if (
+            ability.shortEffect !== undefined &&
+            (typeof ability.shortEffect !== 'string' || !ability.shortEffect.trim())
+          ) {
+            errors.push(`${abLabel} : "shortEffect" doit être une chaîne non vide si présent.`);
+          }
         });
       }
 

@@ -1,0 +1,73 @@
+.ability-chip {
+  cursor: default;
+  border-radius: 2px;
+}
+
+.ability-chip:focus {
+  outline: none;
+}
+
+.ability-chip:focus-visible,
+.ability-chip--active {
+  outline: 2px solid var(--stream-cyan, #00f2ff);
+  outline-offset: 2px;
+}
+
+.ability-tooltip {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  max-width: 280px;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #fff;
+  background: rgba(8, 10, 16, 0.96);
+  border: 1px solid var(--stream-cyan, #00f2ff);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  transform: translate(-50%, calc(-100% - 10px));
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease, visibility 0.12s ease;
+}
+
+.ability-tooltip--below {
+  transform: translate(-50%, 10px);
+}
+
+.ability-tooltip--visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ability-tooltip__name {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--stream-cyan, #00f2ff);
+}
+
+.ability-tooltip__effect {
+  display: block;
+  font-weight: 500;
+  white-space: normal;
+}
+
+.pokedex-table-abilities .ability-chip {
+  display: block;
+}
+
+.ability-list__item .ability-chip,
+.stream-ability-list__item .ability-chip {
+  display: inline;
+}
+
+.pokedex-table-ability--hidden.ability-chip,
+.pokedex-table-ability--hidden .ability-chip,
+.ability-list__item--hidden .ability-chip,
+.stream-ability-list__item--hidden .ability-chip {
+  color: inherit;
+  font-style: italic;
+}
