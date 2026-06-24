@@ -10,6 +10,7 @@
   const { TypeDisplay } = window;
   const { PokedexView } = window;
   const { StreamView } = window;
+  const { StreamAnimations } = window;
   const { PoolActive } = window;
   const { MockDraft } = window;
 
@@ -927,6 +928,7 @@
       showMessage(result.message, 'error');
       return;
     }
+    if (StreamAnimations) StreamAnimations.suppressNextRender();
     state = result.state;
     persist();
     renderAll();
@@ -1180,6 +1182,16 @@
       return;
     }
 
+    const playerIndex = DraftState.getActivePlayerIndex(state);
+    if (isStreamMode() && StreamAnimations) {
+      StreamAnimations.prepareTurnAction({
+        kind: 'ban',
+        pokemonId: pokemon.id,
+        playerIndex,
+        spriteUrl: pokemon.spriteUrl,
+      });
+    }
+
     state = DraftState.applyBan(state, pokemon, poolData);
     clearPokemonSearch();
     persist();
@@ -1198,6 +1210,17 @@
     if (!DraftState.canAssignPick(pokemon, state, playerIndex)) {
       showMessage('Draft impossible pour ce joueur ou ce Pokémon.', 'error');
       return;
+    }
+
+    const slotIndex = (state.teams[playerIndex] || []).length;
+    if (isStreamMode() && StreamAnimations) {
+      StreamAnimations.prepareTurnAction({
+        kind: 'pick',
+        pokemonId: pokemon.id,
+        playerIndex,
+        slotIndex,
+        spriteUrl: pokemon.spriteUrl,
+      });
     }
 
     state = DraftState.assignPick(state, playerIndex, pokemon, poolData);
@@ -1229,6 +1252,10 @@
   }
 
   function undo() {
+    if (isStreamMode() && StreamAnimations) {
+      StreamAnimations.cancelAll();
+      StreamAnimations.suppressNextRender();
+    }
     state = DraftState.undo(state);
     persist();
     if (undoRenderRaf) cancelAnimationFrame(undoRenderRaf);
@@ -1517,6 +1544,7 @@
   }
 
   function applyImportedDraft(rawState, meta) {
+    if (StreamAnimations) StreamAnimations.suppressNextRender();
     state = DraftState.importDraftState(rawState, poolData);
     editingPlayerName = null;
     slotPickerContext = null;

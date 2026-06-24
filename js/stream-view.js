@@ -357,7 +357,7 @@
     item.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
   }
 
-  function syncBannedRow(rowEl, bansByPlayer, poolData, selectedPokemonId) {
+  function syncBannedRow(rowEl, bansByPlayer, poolData, selectedPokemonId, flyContext) {
     const { DraftState } = global;
     const playerCount = DraftState.PLAYER_COUNT;
     let cells = rowEl.querySelectorAll(':scope > .stream-banned__cell');
@@ -372,12 +372,26 @@
         continue;
       }
 
+      const oldKey = cell?.dataset?.banKey || '';
       const html = renderBannedCell(ban, poolData, selectedPokemonId, playerIndex);
+      let newCell = null;
       if (cell) {
         cell.insertAdjacentHTML('afterend', html);
+        newCell = cell.nextElementSibling;
         cell.remove();
       } else {
         rowEl.insertAdjacentHTML('beforeend', html);
+        newCell = rowEl.lastElementChild;
+      }
+
+      if (
+        ban &&
+        oldKey.endsWith(':empty') &&
+        flyContext?.action?.kind === 'ban' &&
+        flyContext.action.playerIndex === playerIndex &&
+        global.StreamAnimations
+      ) {
+        global.StreamAnimations.playBanAnimation(newCell, ban, flyContext, poolData, playerIndex);
       }
     }
 
@@ -396,7 +410,7 @@
     });
   }
 
-  function renderBanned(state, poolData) {
+  function renderBanned(state, poolData, flyContext) {
     const list = document.getElementById('stream-banned-list');
     if (!list) return;
 
@@ -432,8 +446,8 @@
     }
 
     const rows = list.querySelectorAll('.stream-banned__row');
-    if (rows[0]) syncBannedRow(rows[0], round1, poolData, selectedPokemonId);
-    if (rows[1]) syncBannedRow(rows[1], round2, poolData, selectedPokemonId);
+    if (rows[0]) syncBannedRow(rows[0], round1, poolData, selectedPokemonId, flyContext);
+    if (rows[1]) syncBannedRow(rows[1], round2, poolData, selectedPokemonId, flyContext);
   }
 
 
@@ -655,7 +669,11 @@
     selectedId: null,
     bansKey: '',
     recapKey: '',
+    totalPicksDone: 0,
+    totalBansDone: 0,
   };
+
+  let streamRenderCount = 0;
 
   function getTeamsKey(state) {
     return JSON.stringify(state.teams);
@@ -680,7 +698,7 @@
     });
   }
 
-  function syncPlayerSide(container, state, indices, active, side, poolData) {
+  function syncPlayerSide(container, state, indices, active, side, poolData, flyContext) {
     const { DraftState } = global;
     const selectedPokemonId = state.selectedPokemonId || null;
     const pickCount = DraftState.PICKS_PER_PLAYER;
@@ -716,6 +734,23 @@
             'beforeend',
             pick ? renderFilledSlotHtml(pick, poolData, selectedPokemonId) : renderEmptySlotHtml()
           );
+          if (
+            pick &&
+            flyContext?.action?.kind === 'pick' &&
+            flyContext.action.playerIndex === playerIndex &&
+            flyContext.action.slotIndex === s &&
+            global.StreamAnimations
+          ) {
+            const newSlot = slotsWrap.lastElementChild;
+            global.StreamAnimations.playPickAnimation(
+              newSlot,
+              pick,
+              flyContext,
+              poolData,
+              playerIndex,
+              s
+            );
+          }
           continue;
         }
 
@@ -724,7 +759,24 @@
         } else if (!pick && currentPickId === '') {
           syncEmptySlotEl(slotEl);
         } else if (pick) {
+          const isNewFill = currentPickId === '';
           syncFilledSlotEl(slotEl, pick, poolData, selectedPokemonId);
+          if (
+            isNewFill &&
+            flyContext?.action?.kind === 'pick' &&
+            flyContext.action.playerIndex === playerIndex &&
+            flyContext.action.slotIndex === s &&
+            global.StreamAnimations
+          ) {
+            global.StreamAnimations.playPickAnimation(
+              slotEl,
+              pick,
+              flyContext,
+              poolData,
+              playerIndex,
+              s
+            );
+          }
         } else {
           syncEmptySlotEl(slotEl);
         }
@@ -736,7 +788,7 @@
     });
   }
 
-  function renderPlayerSide(container, state, indices, active, side, poolData) {
+  function renderPlayerSide(container, state, indices, active, side, poolData, flyContext) {
     const hasPanels = container.querySelector('.stream-player');
     if (!hasPanels) {
       const selectedPokemonId = state.selectedPokemonId || null;
@@ -755,7 +807,7 @@
         .join('');
       return;
     }
-    syncPlayerSide(container, state, indices, active, side, poolData);
+    syncPlayerSide(container, state, indices, active, side, poolData, flyContext);
   }
 
   function getTurnDurationSec() {
@@ -813,6 +865,26 @@
   }
 
   function render(state, poolData) {
+    const Anim = global.StreamAnimations;
+
+    if (Anim && streamRenderCount === 0) {
+      Anim.suppressNextRender();
+    }
+    streamRenderCount++;
+
+    const prevPicksDone = lastRenderSnapshot.totalPicksDone ?? 0;
+    const prevBansDone = lastRenderSnapshot.totalBansDone ?? 0;
+    const picksDelta = (state.totalPicksDone ?? 0) - prevPicksDone;
+    const bansDelta = (state.totalBansDone ?? 0) - prevBansDone;
+    if (Anim && (picksDelta > 1 || bansDelta > 1)) {
+      Anim.suppressNextRender();
+    }
+
+    if (Anim) {
+      Anim.captureSpotlightOrigin();
+    }
+    const flyContext = Anim ? Anim.getCapturedFlyContext() : null;
+
     const active = global.DraftState.getActivePlayerIndex(state);
     const teamsKey = getTeamsKey(state);
     const bansKey = getBansKey(state);
@@ -825,8 +897,8 @@
     const playerNamesKey = getPlayerNamesKey(state);
 
     if (teamsKey !== lastRenderSnapshot.teamsKey) {
-      if (left) renderPlayerSide(left, state, [0, 1, 2, 3], active, 'left', poolData);
-      if (right) renderPlayerSide(right, state, [4, 5, 6, 7], active, 'right', poolData);
+      if (left) renderPlayerSide(left, state, [0, 1, 2, 3], active, 'left', poolData, flyContext);
+      if (right) renderPlayerSide(right, state, [4, 5, 6, 7], active, 'right', poolData, flyContext);
       lastRenderSnapshot.teamsKey = teamsKey;
       lastRenderSnapshot.playerNamesKey = playerNamesKey;
       lastRenderSnapshot.active = active;
@@ -860,13 +932,17 @@
     }
 
     if (bansKey !== lastRenderSnapshot.bansKey) {
-      renderBanned(state, poolData);
+      renderBanned(state, poolData, flyContext);
       lastRenderSnapshot.bansKey = bansKey;
     }
 
     renderTopBar(state);
     renderTurnTimer(state);
     renderRecapMode(state, poolData);
+
+    lastRenderSnapshot.totalPicksDone = state.totalPicksDone ?? 0;
+    lastRenderSnapshot.totalBansDone = state.totalBansDone ?? 0;
+    Anim?.consumeSuppressOnce();
   }
 
 

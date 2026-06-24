@@ -1093,3 +1093,60 @@
   display: none !important;
 }
 
+/* Animations pick / ban */
+@keyframes stream-land-pop {
+  from {
+    transform: scale(0.75);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.stream-slot--landing .stream-slot__sprite,
+.stream-slot--landing .sprite-slot-wrap--stream {
+  animation: stream-land-pop 0.3s ease-out;
+}
+
+.stream-banned__item--landing img {
+  animation: stream-land-pop 0.3s ease-out;
+}
+
+.stream-slot--incoming .stream-slot__sprite,
+.stream-slot--incoming .sprite-slot-wrap--stream {
+  opacity: 0;
+}
+
+.stream-banned__cell--incoming .stream-banned__item img {
+  opacity: 0;
+}
+
+.stream-fly-ghost {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  transform-origin: center center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.stream-fly-ghost__sprite {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stream-slot--landing .stream-slot__sprite,
+  .stream-slot--landing .sprite-slot-wrap--stream,
+  .stream-banned__item--landing img {
+    animation: none;
+  }
+}
+
