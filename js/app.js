@@ -56,10 +56,7 @@
   function showMessage(text, type) {
     const bar = $('#message-bar');
     if (!bar) return;
-    if (isStreamMode()) {
-      bar.classList.add('hidden');
-      return;
-    }
+    placeMessageBar();
     if (!text) {
       bar.classList.add('hidden');
       return;
