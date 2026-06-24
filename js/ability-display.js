@@ -2,7 +2,7 @@
  * Affichage des habiletés avec tooltip d'effet (index PokeAPI embarqué).
  */
 (function (global) {
-  const INDEX_URL = 'data/pokemon-abilities.json';
+  const INDEX_URL = 'dev/data/pokemon-abilities.json';
   const FALLBACK_EFFECT = 'Effect unavailable';
 
   let indexByName = null;

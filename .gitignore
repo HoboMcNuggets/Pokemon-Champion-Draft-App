@@ -1,0 +1,9 @@
+# Outillage, données générées et specs (non déployés sur le site)
+dev/
+
+# IDE / outillage éditeur
+.cursor/
+.cursorignore
+
+# Secrets locaux Azure Functions
+api/local.settings.json

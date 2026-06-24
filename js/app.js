@@ -11,8 +11,9 @@
   const { PokedexView } = window;
   const { StreamView } = window;
   const { PoolActive } = window;
+  const { MockDraft } = window;
 
-  const POKEDEX_URL = 'data/pokemon-pokedex.json';
+  const POKEDEX_URL = 'dev/data/pokemon-pokedex.json';
   /** Seuil sous lequel le cache localStorage est considéré comme un ancien pool partiel. */
   const FULL_POKEDEX_MIN = 1000;
 
@@ -905,7 +906,49 @@
       $('#pokemon-search').disabled = true;
     }
 
+    updateMockDraftButton();
     updateDockActions();
+  }
+
+  function canRunMockDraftSilent() {
+    if (!poolData?.pokemon?.length) return false;
+    return poolData.pokemon.some((p) => p.enabled);
+  }
+
+  function updateMockDraftButton() {
+    const btn = $('#btn-mock-draft');
+    if (!btn) return;
+    btn.disabled = !canRunMockDraftSilent();
+  }
+
+  function applyMockDraftResult() {
+    const result = MockDraft.runInstantMockDraft(state, poolData);
+    if (!result.ok) {
+      showMessage(result.message, 'error');
+      return;
+    }
+    state = result.state;
+    persist();
+    renderAll();
+    showMessage('Draft simulé — 16 bans et 64 picks enregistrés.', 'success');
+  }
+
+  function runMockDraft() {
+    if (!canRunMockDraftSilent()) {
+      showMessage('Aucun Pokémon activé dans le pool.', 'error');
+      return;
+    }
+
+    if (state.phase === PHASE.SETUP) {
+      applyMockDraftResult();
+      return;
+    }
+
+    showModal(
+      'Simuler un draft complet',
+      'Le draft en cours sera remplacé par une simulation automatique. Continuer ?',
+      applyMockDraftResult
+    );
   }
 
   function searchInputEnabled(playing) {
@@ -1708,6 +1751,7 @@
     $('#btn-pick')?.addEventListener('click', assignSelection);
     $('#btn-undo-dock')?.addEventListener('click', undo);
     $('#btn-reset-draft').addEventListener('click', resetDraft);
+    $('#btn-mock-draft')?.addEventListener('click', runMockDraft);
     $('#btn-new-game').addEventListener('click', newGame);
     $('#btn-export').addEventListener('click', exportDraft);
     $('#btn-import').addEventListener('click', () => {
@@ -1827,7 +1871,7 @@
 
     function onPokedexFailed() {
       showMessage(
-        'Impossible de charger le Pokédex. Vérifiez js/pokemon-pokedex-data.js ou data/pokemon-pokedex.json.',
+        'Impossible de charger le Pokédex. Vérifiez js/pokemon-pokedex-data.js ou dev/data/pokemon-pokedex.json.',
         'error'
       );
       if (!poolData && window.DEFAULT_EXAMPLE_POOL) {

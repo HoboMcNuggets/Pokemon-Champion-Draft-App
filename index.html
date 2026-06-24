@@ -292,7 +292,9 @@
 
       <section class="settings-section" aria-labelledby="settings-draft-heading">
         <h3 id="settings-draft-heading" class="settings-section__title">Draft</h3>
+        <p class="settings-section__hint">Simuler un draft complet remplit automatiquement les 16 bans et 64 picks pour tester l'interface. Utilisez <strong>Réinitialiser le draft</strong> pour repartir de zéro.</p>
         <div class="settings-draft-actions">
+          <button type="button" class="btn btn-secondary" id="btn-mock-draft">Simuler un draft complet</button>
           <button type="button" class="btn btn-secondary" id="btn-export">Exporter le draft</button>
           <button type="button" class="btn btn-secondary" id="btn-import">Importer le draft</button>
           <input type="file" id="draft-import-file" class="hidden" accept=".json,application/json">
@@ -362,6 +364,8 @@
   <script src="js/pool-active.js"></script>
 
   <script src="js/state.js"></script>
+
+  <script src="js/mock-draft.js"></script>
 
   <script src="js/storage.js"></script>
 

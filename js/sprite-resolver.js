@@ -3,7 +3,7 @@
  */
 (function (global) {
   const PLACEHOLDER = 'assets/sprites/placeholder.svg';
-  const INDEX_URL = 'data/pokeos-sprite-index.json';
+  const INDEX_URL = 'dev/data/pokeos-sprite-index.json';
   const POKEOS_ANIMATED_BASE =
     'https://s3.pokeos.com/pokeos-uploads/assets/pokemon/home/animated/';
   const POKEOS_STATIC_BASE = 'https://s3.pokeos.com/pokeos-uploads/assets/pokemon/home/';
