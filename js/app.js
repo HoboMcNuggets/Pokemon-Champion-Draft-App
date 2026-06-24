@@ -1598,6 +1598,7 @@
       }
       f.page = Math.min(totalPages, Math.max(1, next));
       renderPokedex();
+      PokedexView.scrollToTop($('#pokedex-root'));
       return;
     }
     if (extra?.sortKey) {
@@ -1629,12 +1630,15 @@
         return;
       }
       f.page = 1;
-    } else if (e.target.id === 'pokedex-page-jump') {
+    } else if (e.target.closest('.pokedex-page-jump')) {
       const totalPages = getPokedexTotalPages(getPokedexFilteredList().length);
       const n = Number.parseInt(e.target.value, 10);
       if (Number.isFinite(n)) {
         f.page = Math.min(totalPages, Math.max(1, n));
       }
+      renderPokedex();
+      PokedexView.scrollToTop($('#pokedex-root'));
+      return;
     }
 
     renderPokedex();

@@ -240,6 +240,11 @@
   border-radius: 12px;
 }
 
+.pokedex-toolbar--bottom {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
 .pokedex-pagination {
   display: flex;
   flex-wrap: wrap;

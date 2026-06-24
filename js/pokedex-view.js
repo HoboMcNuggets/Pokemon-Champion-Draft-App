@@ -227,13 +227,17 @@
       .replace(/>/g, '&gt;');
   }
 
-  function renderPagination(container, meta) {
+  function renderPagination(container, meta, options) {
     const { page, totalPages, totalItems, rangeStart, rangeEnd } = meta;
     const pageRange = buildPageRange(page, totalPages);
     const rangeLabel =
       totalItems === 0
         ? 'Aucun résultat'
         : `${rangeStart}–${rangeEnd} sur ${totalItems}`;
+    const ariaLabel =
+      options?.position === 'bottom'
+        ? 'Pagination du Pokédex — bas de liste'
+        : 'Pagination du Pokédex';
 
     const pageButtons = pageRange
       .map((item) => {
@@ -247,7 +251,7 @@
       .join('');
 
     container.innerHTML = `
-      <nav class="pokedex-pagination" aria-label="Pagination du Pokédex">
+      <nav class="pokedex-pagination" aria-label="${ariaLabel}">
         <span class="pokedex-pagination__range">${rangeLabel}</span>
         <div class="pokedex-pagination__nav" role="group" aria-label="Pages">
           <button type="button" class="pokedex-page-btn pokedex-page-btn--edge" data-pokedex-page="first" aria-label="Première page"${page <= 1 ? ' disabled' : ''}>«</button>
@@ -258,10 +262,15 @@
         </div>
         <label class="pokedex-pagination__jump">
           <span>Aller à</span>
-          <input type="number" id="pokedex-page-jump" min="1" max="${totalPages}" value="${page}" inputmode="numeric" aria-label="Numéro de page">
+          <input type="number" class="pokedex-page-jump" min="1" max="${totalPages}" value="${page}" inputmode="numeric" aria-label="Numéro de page">
           <span>/ ${totalPages}</span>
         </label>
       </nav>`;
+  }
+
+  function scrollToTop(root) {
+    const el = root?.querySelector('.pokedex-header') || root;
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function renderTypeFilterTriggerContent(typeFilters) {
@@ -450,10 +459,12 @@
 
     contentEl.innerHTML = `
       <div class="pokedex-toolbar"></div>
-      <div class="pokedex-table-wrap"></div>`;
+      <div class="pokedex-table-wrap"></div>
+      <div class="pokedex-toolbar pokedex-toolbar--bottom"></div>`;
 
-    renderPagination(contentEl.querySelector('.pokedex-toolbar'), meta);
+    renderPagination(contentEl.querySelector('.pokedex-toolbar:not(.pokedex-toolbar--bottom)'), meta);
     renderTable(contentEl.querySelector('.pokedex-table-wrap'), pageList, canEditActive);
+    renderPagination(contentEl.querySelector('.pokedex-toolbar--bottom'), meta, { position: 'bottom' });
   }
 
   function bindFilters(root, onChange) {
@@ -463,7 +474,7 @@
     });
     root.addEventListener('change', (e) => {
       const id = e.target.id;
-      if (id === 'pokedex-enabled-filter' || id === 'pokedex-page-jump') {
+      if (id === 'pokedex-enabled-filter' || e.target.closest('.pokedex-page-jump')) {
         onChange(e);
       }
     });
@@ -472,7 +483,7 @@
         closeAllTypeFilterMenus(root);
         return;
       }
-      if (e.target.id === 'pokedex-page-jump' && e.key === 'Enter') {
+      if (e.target.closest('.pokedex-page-jump') && e.key === 'Enter') {
         e.preventDefault();
         onChange(e);
       }
@@ -536,5 +547,6 @@
     bindFilters,
     filterList,
     normalizeTypeFilters,
+    scrollToTop,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
