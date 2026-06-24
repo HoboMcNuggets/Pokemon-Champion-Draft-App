@@ -49,7 +49,7 @@ Champs obligatoires : `pokedexId`, `id`, `name`, types, stats, `spriteUrl`, `ena
 - `abilities` : tableau de 1 à 3 objets `{ "name": "Overgrow", "isHidden": false }` (noms anglais, `isHidden: true` pour le talent caché). Champ optionnel `shortEffect` (anglais) pour surcharger l'effet affiché au survol.
 - `enabled: true` → éligible au draft (pool Champions).
 - `enabled: false` → visible dans le Pokédex, exclu du draft.
-- Même `speciesKey` pour base / méga / régional : un **pick** ou un **ban de la base** retire toute la famille ; un **ban méga** (`isMega: true`) ne retire que l'`id` banni.
+- Même `speciesKey` pour base / méga / régional : un **pick** ou un **ban de la base** retire toute la famille ; un **ban méga** (`isMega: true`) ne retire que l'`id` banni. 
 
 ### Régénérer le Pokédex
 
