@@ -21,6 +21,8 @@
 
   <link rel="stylesheet" href="css/draft-recap.css">
 
+  <link rel="stylesheet" href="css/draft-recap-export.css">
+
   <link rel="stylesheet" href="css/type-themes.css">
 
 </head>
@@ -130,6 +132,8 @@
 
       <div id="dashboard-recap" class="draft-recap-dashboard hidden" aria-label="Récapitulatif du draft"></div>
 
+      <button type="button" class="btn btn-secondary" id="btn-export-recap-image">Exporter le récap en image</button>
+
       <button type="button" class="btn btn-primary" id="btn-new-game">Nouveau draft</button>
 
     </div>
@@ -182,6 +186,7 @@
                 <button type="button" class="stream-action-btn stream-action-btn--ban hidden" id="btn-ban" disabled>Bannir</button>
                 <button type="button" class="stream-action-btn stream-action-btn--pick hidden" id="btn-pick" disabled>Choisir</button>
                 <button type="button" class="stream-action-btn stream-action-btn--undo hidden" id="btn-undo-dock" disabled>Retour</button>
+                <button type="button" class="stream-action-btn stream-action-btn--export-recap hidden" id="btn-export-recap-stream">Exporter le récap</button>
               </div>
             </div>
           </div>
@@ -376,6 +381,8 @@
   <script src="js/type-display.js"></script>
 
   <script src="js/type-chart.js"></script>
+
+  <script src="assets/vendor/html2canvas.min.js"></script>
 
   <script src="js/draft-recap.js"></script>
 

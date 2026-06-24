@@ -796,6 +796,7 @@
     if (!recapEl) return;
 
     recapEl.classList.toggle('hidden', !isComplete);
+    document.getElementById('btn-export-recap-stream')?.classList.toggle('hidden', !isComplete);
 
     if (!isComplete) {
       lastRenderSnapshot.recapKey = '';

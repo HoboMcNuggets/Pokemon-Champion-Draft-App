@@ -1,0 +1,302 @@
+/* Export image récap — rendu offscreen 1920 px (équipes + bans) */
+
+.recap-export-host {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 1920px;
+  pointer-events: none;
+  z-index: -1;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: #eef1f8;
+}
+
+.recap-export-card {
+  display: flex;
+  flex-direction: column;
+  width: 1920px;
+  border: 4px solid #ffd700;
+  border-radius: 16px;
+  background: #121828;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.recap-export-card .recap-export-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 40px 48px 48px;
+  overflow: visible;
+  height: auto;
+}
+
+.recap-export-card .stream-recap__header {
+  text-align: center;
+  line-height: 1.25;
+}
+
+.recap-export-card .stream-recap__title {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 800;
+  color: #ffd700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.recap-export-card .stream-recap__duration {
+  margin: 10px 0 0;
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.recap-export-card .stream-recap__duration strong {
+  color: #00f2ff;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.recap-export-section__title {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.recap-export-teams-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.recap-export-player {
+  background: rgba(8, 10, 16, 0.55);
+  border: 2px solid rgba(255, 215, 0, 0.35);
+  border-radius: 12px;
+  padding: 14px 12px 12px;
+  min-width: 0;
+}
+
+.recap-export-player__name {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffd700;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recap-export-player__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 6px;
+}
+
+.recap-export-pokemon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.recap-export-pokemon__sprite {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recap-export-pokemon__sprite img,
+.recap-export-pokemon__sprite .recap-export-sprite-wrap {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.recap-export-sprite-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recap-export-sprite-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.recap-export-sprite--empty {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.recap-export-mega-label {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #ffd700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.recap-export-pokemon__name {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.recap-export-bans {
+  overflow: visible;
+  padding: 4px 0 0;
+}
+
+.recap-export-section--bans {
+  border-top: 2px solid rgba(255, 215, 0, 0.25);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+  padding: 20px 16px 18px;
+}
+
+.recap-export-section--bans .recap-export-section__title {
+  color: #ef5b5b;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.recap-export-bans__grid {
+  display: grid;
+  grid-template-columns: 5.5rem repeat(8, minmax(0, 1fr));
+  gap: 12px 8px;
+  align-items: start;
+}
+
+.recap-export-bans__corner {
+  min-height: 0;
+}
+
+.recap-export-bans__head {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 215, 0, 0.85);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 2px;
+}
+
+.recap-export-bans__round {
+  font-size: 15px;
+  font-weight: 800;
+  color: rgba(239, 91, 91, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  align-self: center;
+}
+
+.recap-export-bans__separator {
+  grid-column: 1 / -1;
+  height: 2px;
+  background: rgba(255, 215, 0, 0.3);
+  margin: 2px 0 4px;
+}
+
+.recap-export-ban-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.recap-export-ban-cell__item {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #ef5b5b;
+  background: rgba(239, 91, 91, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.recap-export-ban-cell--empty .recap-export-ban-cell__item {
+  border-color: rgba(239, 91, 91, 0.25);
+  background: rgba(239, 91, 91, 0.04);
+}
+
+.recap-export-ban-cell__item img,
+.recap-export-ban-cell__item .recap-export-sprite-wrap {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+}
+
+.recap-export-sprite-wrap--ban {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.recap-export-sprite-wrap--ban img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.recap-export-mega-label--banned {
+  position: static;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #ffd700;
+  text-transform: uppercase;
+  text-align: center;
+  text-shadow: none;
+}
+
+.recap-export-ban-cell__name {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

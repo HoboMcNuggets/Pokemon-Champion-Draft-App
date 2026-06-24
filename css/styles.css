@@ -992,6 +992,10 @@ input[type="file"] {
   font-size: 1.75rem;
 }
 
+.complete-panel .btn + .btn {
+  margin-top: 0.75rem;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;

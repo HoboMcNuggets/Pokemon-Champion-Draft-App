@@ -45,6 +45,7 @@
   /** Référence persistante — le panneau J8 est re-rendu à chaque tick stream. */
   let viewModeSwitchEl = null;
   let lastDashboardRecapKey = '';
+  let recapExportInProgress = false;
   let lastSearchListKey = '';
   let undoRenderRaf = 0;
 
@@ -587,7 +588,7 @@
     const btnPick = $('#btn-pick');
     const btnUndoDock = $('#btn-undo-dock');
 
-    const showStreamDock = stream && (setup || playing || (complete && hasHistory));
+    const showStreamDock = stream && (setup || playing || complete);
 
     if (btnStartStream) {
       const showStart = setup && stream;
@@ -1502,6 +1503,45 @@
     );
   }
 
+  function exportRecapImage() {
+    if (recapExportInProgress) return;
+    if (state.phase !== PHASE.COMPLETE) {
+      showMessage('Le récapitulatif est disponible uniquement en fin de draft.', 'error');
+      return;
+    }
+    if (!window.DraftRecap?.exportRecapImage) {
+      showMessage('Export image indisponible.', 'error');
+      return;
+    }
+
+    const buttons = [$('#btn-export-recap-image'), $('#btn-export-recap-stream')].filter(Boolean);
+    const originalLabels = buttons.map((btn) => btn.textContent);
+
+    recapExportInProgress = true;
+    buttons.forEach((btn) => {
+      btn.disabled = true;
+      btn.textContent = 'Export…';
+    });
+
+    const recap = window.DraftRecap.computeRecap(state, poolData);
+    window.DraftRecap.exportRecapImage(recap, { poolData }).then((result) => {
+      if (!result.ok) {
+        showMessage(result.error || 'Échec de l\'export image.', 'error');
+        return;
+      }
+      const msg = result.degraded
+        ? 'Image exportée (certains sprites n’ont pas pu être inclus).'
+        : 'Récapitulatif exporté en image.';
+      showMessage(msg, 'success');
+    }).finally(() => {
+      recapExportInProgress = false;
+      buttons.forEach((btn, index) => {
+        btn.disabled = false;
+        btn.textContent = originalLabels[index];
+      });
+    });
+  }
+
   function exportDraft() {
     const payload = DraftState.createExportPayload(state, {
       leagueName: poolData?.leagueName,
@@ -1753,6 +1793,8 @@
     $('#btn-reset-draft').addEventListener('click', resetDraft);
     $('#btn-mock-draft')?.addEventListener('click', runMockDraft);
     $('#btn-new-game').addEventListener('click', newGame);
+    $('#btn-export-recap-image')?.addEventListener('click', exportRecapImage);
+    $('#btn-export-recap-stream')?.addEventListener('click', exportRecapImage);
     $('#btn-export').addEventListener('click', exportDraft);
     $('#btn-import').addEventListener('click', () => {
       const input = $('#draft-import-file');
