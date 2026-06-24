@@ -11,7 +11,7 @@ Application HTML / JavaScript pour animer un draft Pokémon à 8 joueurs (bans e
 ## Onglets (mode Tableau de bord)
 
 - **Tableau de bord** : grille des 8 joueurs (noms éditables, équipes modifiables), suivi des bans et picks. À la fin du draft : récapitulatif (types, stats par joueur, durée) puis **Nouveau draft** (avec confirmation).
-- **Pokédex** : liste complète (~1300 Pokémon), stats, types, habiletés, BST, recherche et filtres Actif / Inactif. Clic sur une ligne pour afficher le détail (stats + abilities).
+- **Pokédex** : liste complète (~1300 Pokémon), stats, types, habiletés (survol pour voir l'effet), BST, recherche et filtres Actif / Inactif. Clic sur une ligne pour afficher le détail (stats + abilities).
 - **Configuration** : durée du timer par tour (minutes et secondes, mode Stream), thème de couleur, style de sprites (Rétro Showdown / Nouveau Pokeos), export / import JSON du draft, réinitialisation du draft.
 
 ## Flux bans + draft
@@ -28,7 +28,7 @@ Fichier principal : `data/pokemon-pokedex.json`. Modèle réduit : `data/pokemon
 
 Champs obligatoires : `pokedexId`, `id`, `name`, types, stats, `spriteUrl`, `enabled`, `speciesKey`, `isMega`, `abilities`.
 
-- `abilities` : tableau de 1 à 3 objets `{ "name": "Overgrow", "isHidden": false }` (noms anglais, `isHidden: true` pour le talent caché).
+- `abilities` : tableau de 1 à 3 objets `{ "name": "Overgrow", "isHidden": false }` (noms anglais, `isHidden: true` pour le talent caché). Champ optionnel `shortEffect` (anglais) pour surcharger l'effet affiché au survol.
 - `enabled: true` → éligible au draft (pool Champions).
 - `enabled: false` → visible dans le Pokédex, exclu du draft.
 - Même `speciesKey` pour base / méga / régional : un **pick** ou un **ban de la base** retire toute la famille ; un **ban méga** (`isMega: true`) ne retire que l’`id` banni.
@@ -62,7 +62,14 @@ Pour régénérer le JS embarqué seul :
 node scripts/json-to-pokedex-js.mjs
 ```
 
-Sources : [PokeAPI](https://pokeapi.co/) (stats et habiletés via `/pokemon` + `/ability`), sprites Pokémon Showdown (animés, mode **Rétro**) avec repli artwork PokeAPI ; sprites [Pokeos](https://www.pokeos.com/) Pokémon HOME (GIF animés ou PNG `render/`, mode **Nouveau**) avec repli Showdown si absent. Les Pokémon actifs du fichier `data/pokemon-pool.champions-s1.json` sont marqués `enabled: true`.
+Index des effets d'habiletés (PokeAPI, tooltips Pokédex + Stream) :
+
+```bash
+node scripts/build-ability-index.mjs
+node scripts/json-to-ability-index-js.mjs
+```
+
+Sources : [PokeAPI](https://pokeapi.co/) (stats et habiletés via `/pokemon` + `/ability`, effets dans `data/pokemon-abilities.json`), sprites Pokémon Showdown (animés, mode **Rétro**) avec repli artwork PokeAPI ; sprites [Pokeos](https://www.pokeos.com/) Pokémon HOME (GIF animés ou PNG `render/`, mode **Nouveau**) avec repli Showdown si absent. Les Pokémon actifs du fichier `data/pokemon-pool.champions-s1.json` sont marqués `enabled: true`.
 
 ### Style de sprites
 
@@ -91,7 +98,7 @@ En haut de l'écran, basculez entre **Tableau de bord** (opérateur) et **Stream
 **Stream** :
 
 - 4 joueurs à gauche, 4 à droite (zone caméra + grille 8 Pokéballs / sprites en 4 colonnes)
-- Centre : Pokémon sélectionné, avec stats en barres et habiletés en dessous
+- Centre : Pokémon sélectionné, avec stats en barres et habiletés en dessous (survol pour voir l'effet)
 - Bas : liste globale des bannis (toujours visible, y compris à la fin du draft) ; récapitulatif au-dessus lorsque le draft est terminé
 - Sous la recherche : **Bannir** (phase bans) ou **Choisir** (phase draft) + retour arrière
 - Timer par tour : durée réglable dans l’onglet Configuration (appliquée au prochain tour)
