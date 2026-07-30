@@ -50,9 +50,21 @@
 
 
 
+  function toLookupSet(list) {
+
+    if (list instanceof Set) return list;
+
+    return new Set(list || []);
+
+  }
+
+
+
   function isSpeciesUsed(speciesKey, usedSpecies) {
 
-    return usedSpecies.includes(speciesKey);
+    if (usedSpecies instanceof Set) return usedSpecies.has(speciesKey);
+
+    return (usedSpecies || []).includes(speciesKey);
 
   }
 
@@ -60,7 +72,9 @@
 
   function isPokemonIdBanned(pokemonId, bannedPokemonIds) {
 
-    return bannedPokemonIds.includes(pokemonId);
+    if (bannedPokemonIds instanceof Set) return bannedPokemonIds.has(pokemonId);
+
+    return (bannedPokemonIds || []).includes(pokemonId);
 
   }
 
@@ -144,9 +158,9 @@
 
       pokemon.enabled === true &&
 
-      !isSpeciesUsed(pokemon.speciesKey, usedSpecies) &&
+      !isSpeciesUsed(pokemon.speciesKey, toLookupSet(usedSpecies)) &&
 
-      !isPokemonIdBanned(pokemon.id, bannedPokemonIds)
+      !isPokemonIdBanned(pokemon.id, toLookupSet(bannedPokemonIds))
 
     );
 
@@ -156,7 +170,23 @@
 
   function filterSelectable(pool, availability) {
 
-    return pool.filter((p) => isSelectable(p, availability));
+    const { usedSpecies, bannedPokemonIds } = normalizeAvailability(availability);
+
+    const usedSet = toLookupSet(usedSpecies);
+
+    const bannedSet = toLookupSet(bannedPokemonIds);
+
+    return pool.filter(
+
+      (p) =>
+
+        p.enabled === true &&
+
+        !usedSet.has(p.speciesKey) &&
+
+        !bannedSet.has(p.id)
+
+    );
 
   }
 
@@ -468,17 +498,19 @@
     return true;
   }
 
-  function resolveSprite(pokemon) {
+  function resolveSprite(pokemon, options) {
     if (global.SpriteResolver?.resolve) {
-      return global.SpriteResolver.resolve(pokemon);
+      return global.SpriteResolver.resolve(pokemon, options);
     }
     const url = pokemon?.spriteUrl || PLACEHOLDER;
     return { url, fallbacks: url !== PLACEHOLDER ? [PLACEHOLDER] : [] };
   }
 
   function tagForPokemon(pokemon, options) {
-    const resolved = resolveSprite(pokemon);
-    return tag(resolved.url, { ...options, fallbacks: resolved.fallbacks });
+    const opts = options || {};
+    const resolveOpts = opts.preferStatic ? { preferStatic: true, mode: opts.mode } : opts.mode;
+    const resolved = resolveSprite(pokemon, resolveOpts);
+    return tag(resolved.url, { ...opts, fallbacks: resolved.fallbacks });
   }
 
   function isMegaPokemon(ref, poolData) {

@@ -607,10 +607,50 @@
     return { degraded };
   }
 
+  let html2canvasLoadPromise = null;
+
+  function loadHtml2Canvas() {
+    if (typeof global.html2canvas === 'function') {
+      return Promise.resolve(global.html2canvas);
+    }
+    if (html2canvasLoadPromise) return html2canvasLoadPromise;
+
+    html2canvasLoadPromise = new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-html2canvas="1"]');
+      if (existing) {
+        existing.addEventListener('load', () => {
+          if (typeof global.html2canvas === 'function') resolve(global.html2canvas);
+          else reject(new Error('html2canvas non disponible après chargement.'));
+        });
+        existing.addEventListener('error', () => reject(new Error('Échec du chargement html2canvas.')));
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'assets/vendor/html2canvas.min.js';
+      script.async = true;
+      script.dataset.html2canvas = '1';
+      script.onload = () => {
+        if (typeof global.html2canvas === 'function') resolve(global.html2canvas);
+        else reject(new Error('html2canvas non disponible après chargement.'));
+      };
+      script.onerror = () => reject(new Error('Échec du chargement html2canvas.'));
+      document.head.appendChild(script);
+    });
+
+    return html2canvasLoadPromise;
+  }
+
   async function exportRecapImage(recap, options = {}) {
     if (!recap) {
       return { ok: false, error: 'Récapitulatif indisponible.' };
     }
+
+    try {
+      await loadHtml2Canvas();
+    } catch (err) {
+      return { ok: false, error: err?.message || 'Bibliothèque html2canvas non chargée.' };
+    }
+
     if (typeof global.html2canvas !== 'function') {
       return { ok: false, error: 'Bibliothèque html2canvas non chargée.' };
     }

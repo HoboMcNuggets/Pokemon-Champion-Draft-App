@@ -49,9 +49,76 @@
   let recapExportInProgress = false;
   let lastSearchListKey = '';
   let undoRenderRaf = 0;
+  let searchInputDebounce = 0;
+  let slotPickerDebounce = 0;
+  let searchResultsDelegated = false;
+  let slotPickerDelegated = false;
+  let lastDashboardTeamsKey = '';
+  let lastDashboardNamesKey = '';
+  let lastDashboardActive = -2;
+  let lastDashboardBansKey = '';
+  let cachedPoolStats = null;
+  let cachedPoolStatsKey = '';
+  let cachedActivePoolStats = null;
+  let cachedActivePoolStatsKey = '';
+  let poolEnabledRevision = 0;
+
+  const SEARCH_RESULT_LIMIT = 40;
+  const SEARCH_DEBOUNCE_MS = 160;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
+
+  function bumpPoolEnabledRevision() {
+    poolEnabledRevision += 1;
+    cachedActivePoolStats = null;
+    cachedActivePoolStatsKey = '';
+    cachedPoolStats = null;
+    cachedPoolStatsKey = '';
+  }
+
+  function getPoolStatsCached() {
+    if (!poolData?.pokemon) return { total: 0, actifs: 0, horsPool: 0, disponibles: 0 };
+    const key = [
+      poolEnabledRevision,
+      state.totalBansDone,
+      state.totalPicksDone,
+      (state.usedSpecies || []).length,
+      (state.bannedPokemonIds || []).length,
+      (state.usedSpecies || []).join(','),
+      (state.bannedPokemonIds || []).join(','),
+    ].join('|');
+    if (key === cachedPoolStatsKey && cachedPoolStats) return cachedPoolStats;
+    cachedPoolStats = PokemonSpecies.countPoolStats(poolData.pokemon, state);
+    cachedPoolStatsKey = key;
+    return cachedPoolStats;
+  }
+
+  function getActivePoolStatsCached() {
+    if (!poolData?.pokemon) return { total: 0, actifs: 0, megaCount: 0, typeCounts: {} };
+    const key = String(poolEnabledRevision);
+    if (key === cachedActivePoolStatsKey && cachedActivePoolStats) return cachedActivePoolStats;
+    cachedActivePoolStats = PokemonSpecies.countActivePoolStats(poolData.pokemon);
+    cachedActivePoolStatsKey = key;
+    return cachedActivePoolStats;
+  }
+
+  function searchListCacheKey(phase, q, list) {
+    const n = list.length;
+    const first = n ? list[0].id : '';
+    const last = n ? list[n - 1].id : '';
+    return `${phase}|${q}|${n}|${first}|${last}`;
+  }
+
+  function renderDenseSpriteTag(pokemon) {
+    return SpriteImg.tagForPokemon(pokemon, {
+      loading: 'lazy',
+      decoding: 'async',
+      pokemonId: pokemon.id,
+      id: pokemon.id,
+      preferStatic: true,
+    });
+  }
 
   function showMessage(text, type) {
     const bar = $('#message-bar');
@@ -79,6 +146,13 @@
 
   function setPool(pool) {
     poolData = pool;
+    DraftState.invalidatePokemonIndex?.();
+    bumpPoolEnabledRevision();
+    lastDashboardTeamsKey = '';
+    lastDashboardNamesKey = '';
+    lastDashboardActive = -2;
+    lastDashboardBansKey = '';
+    lastSearchListKey = '';
     if (pool) {
       if (isFullPokedex(pool)) {
         // Le Pokédex complet est trop volumineux pour localStorage ; rechargement depuis le fichier.
@@ -159,6 +233,7 @@
       return;
     }
     persistActiveProfile();
+    bumpPoolEnabledRevision();
     renderAll();
   }
 
@@ -169,6 +244,7 @@
       return;
     }
     persistActiveProfile();
+    bumpPoolEnabledRevision();
     renderAll();
     const count = PoolActive.countActive(poolData);
     const parts = [`Profil actif appliqué (${count} Pokémon actifs).`];
@@ -256,6 +332,7 @@
       () => {
         PoolActive.restoreBaseline(poolData);
         DraftStorage.clearActiveProfile();
+        bumpPoolEnabledRevision();
         renderAll();
         showMessage(`Actifs ${leagueLabel} restaurés.`, 'success');
       }
@@ -413,7 +490,19 @@
       !isStreamMode() &&
       (state.phase === PHASE.BAN || state.phase === PHASE.DRAFT || state.phase === PHASE.COMPLETE);
     section.classList.toggle('hidden', !showBans);
-    if (!showBans) return;
+    if (!showBans) {
+      lastDashboardBansKey = '';
+      return;
+    }
+
+    const namesKey = state.players.map((p) => p.name).join('\0');
+    const bansKey = `${state.totalBansDone}|${(state.bans || [])
+      .map((b, i) => `${i}:${b.playerIndex}:${b.pokemonId}`)
+      .join(',')}|${namesKey}`;
+    if (bansKey === lastDashboardBansKey && board.querySelector('.dashboard-bans__grid')) {
+      return;
+    }
+    lastDashboardBansKey = bansKey;
 
     const { round1, round2 } = buildDashboardBanMatrix();
     const headers = state.players
@@ -439,8 +528,40 @@
       </div>`;
   }
 
-  function renderPlayersGrid() {
+  function renderDashboardSlotHtml(pick, playerIndex, slotIndex) {
+    const slotAttrs = `data-player="${playerIndex}" data-slot="${slotIndex}" role="button" tabindex="0" title="Choisir un Pokémon"`;
+    if (pick) {
+      return `<div class="team-slot team-slot--clickable team-slot--filled" ${slotAttrs} data-pick-id="${escapeAttr(pick.id)}">${SpriteImg.renderSlotForPokemon(lookupPokemon(pick), {
+        alt: pick.name,
+        draggable: false,
+        poolData,
+        wrapClass: 'sprite-slot-wrap sprite-slot-wrap--dashboard',
+        megaLabelClass: 'sprite-mega-label sprite-mega-label--dashboard',
+      })}</div>`;
+    }
+    return `<div class="team-slot empty team-slot--clickable" ${slotAttrs} data-pick-id=""><img src="assets/pokemon-ball.png" alt="" draggable="false"></div>`;
+  }
+
+  function syncDashboardTeamSlot(slotEl, pick, playerIndex, slotIndex) {
+    const pickId = pick?.id || '';
+    const currentPickId = slotEl?.dataset?.pickId ?? null;
+    if (pick && pickId === currentPickId) {
+      SpriteImg.syncSlotContent(slotEl, lookupPokemon(pick), {
+        alt: pick.name,
+        draggable: false,
+        poolData,
+        wrapClass: 'sprite-slot-wrap sprite-slot-wrap--dashboard',
+        megaLabelClass: 'sprite-mega-label sprite-mega-label--dashboard',
+      });
+      return;
+    }
+    if (!pick && currentPickId === '') return;
+    slotEl.outerHTML = renderDashboardSlotHtml(pick, playerIndex, slotIndex);
+  }
+
+  function rebuildPlayersGrid() {
     const grid = $('#players-grid');
+    if (!grid) return;
     const active = DraftState.getActivePlayerIndex(state);
     const showDragHandle = !isStreamMode();
 
@@ -449,21 +570,9 @@
         const isActive = i === active && isPlayingPhase();
         const team = state.teams[i] || [];
         const dragHandle = showDragHandle ? renderPlayerDragHandle(i) : '';
-
-        const slots = Array.from({ length: DraftState.PICKS_PER_PLAYER }, (_, s) => {
-          const pick = team[s];
-          const slotAttrs = `data-player="${i}" data-slot="${s}" role="button" tabindex="0" title="Choisir un Pokémon"`;
-          if (pick) {
-            return `<div class="team-slot team-slot--clickable team-slot--filled" ${slotAttrs}>${SpriteImg.renderSlotForPokemon(lookupPokemon(pick), {
-              alt: pick.name,
-              draggable: false,
-              poolData,
-              wrapClass: 'sprite-slot-wrap sprite-slot-wrap--dashboard',
-              megaLabelClass: 'sprite-mega-label sprite-mega-label--dashboard',
-            })}</div>`;
-          }
-          return `<div class="team-slot empty team-slot--clickable" ${slotAttrs}><img src="assets/pokemon-ball.png" alt="" draggable="false"></div>`;
-        }).join('');
+        const slots = Array.from({ length: DraftState.PICKS_PER_PLAYER }, (_, s) =>
+          renderDashboardSlotHtml(team[s], i, s)
+        ).join('');
 
         return `
         <article class="player-card ${isActive ? 'active' : ''}" data-player="${i}">
@@ -475,6 +584,65 @@
         </article>`;
       })
       .join('');
+
+    lastDashboardTeamsKey = JSON.stringify(state.teams);
+    lastDashboardNamesKey = state.players.map((p) => p.name).join('\0');
+    lastDashboardActive = active;
+  }
+
+  function renderPlayersGrid() {
+    const grid = $('#players-grid');
+    if (!grid) return;
+    if (isStreamMode()) return;
+
+    const active = DraftState.getActivePlayerIndex(state);
+    const teamsKey = JSON.stringify(state.teams);
+    const namesKey = state.players.map((p) => p.name).join('\0');
+    const hasCards = !!grid.querySelector('.player-card');
+
+    if (!hasCards || editingPlayerName !== null) {
+      rebuildPlayersGrid();
+      return;
+    }
+
+    if (namesKey !== lastDashboardNamesKey) {
+      grid.querySelectorAll('.player-card').forEach((el) => {
+        const idx = Number(el.dataset.player);
+        const name = state.players[idx]?.name;
+        const nameBtn = el.querySelector('.player-card__name');
+        if (name != null && nameBtn) nameBtn.textContent = name;
+      });
+      lastDashboardNamesKey = namesKey;
+    }
+
+    if (active !== lastDashboardActive) {
+      grid.querySelectorAll('.player-card').forEach((el) => {
+        el.classList.toggle('active', Number(el.dataset.player) === active && isPlayingPhase());
+      });
+      lastDashboardActive = active;
+    }
+
+    if (teamsKey !== lastDashboardTeamsKey) {
+      state.players.forEach((_, playerIndex) => {
+        const article = grid.querySelector(`.player-card[data-player="${playerIndex}"]`);
+        const slotsWrap = article?.querySelector('.player-card__team');
+        if (!slotsWrap) return;
+        const team = state.teams[playerIndex] || [];
+        for (let s = 0; s < DraftState.PICKS_PER_PLAYER; s++) {
+          let slotEl = slotsWrap.children[s];
+          if (!slotEl) {
+            slotsWrap.insertAdjacentHTML('beforeend', renderDashboardSlotHtml(team[s], playerIndex, s));
+            continue;
+          }
+          syncDashboardTeamSlot(slotEl, team[s], playerIndex, s);
+          slotEl = slotsWrap.children[s];
+        }
+        while (slotsWrap.children.length > DraftState.PICKS_PER_PLAYER) {
+          slotsWrap.lastElementChild.remove();
+        }
+      });
+      lastDashboardTeamsKey = teamsKey;
+    }
   }
 
   function clearPlayerDragVisuals() {
@@ -664,7 +832,9 @@
       return;
     }
 
-    const listKey = `${state.phase}|${q}|${list.map((p) => p.id).join(',')}`;
+    const totalMatches = list.length;
+    const visible = list.slice(0, SEARCH_RESULT_LIMIT);
+    const listKey = searchListCacheKey(state.phase, q, visible) + `|sel:${state.selectedPokemonId || ''}|more:${totalMatches > SEARCH_RESULT_LIMIT ? 1 : 0}`;
     if (listKey === lastSearchListKey) {
       container.querySelectorAll('.search-result-item').forEach((el) => {
         el.classList.toggle('selected', el.dataset.id === state.selectedPokemonId);
@@ -674,27 +844,25 @@
     }
     lastSearchListKey = listKey;
 
-    container.innerHTML = list
-      .map((p) => {
-        const sel = state.selectedPokemonId === p.id;
-        return `
+    const moreHtml =
+      totalMatches > SEARCH_RESULT_LIMIT
+        ? `<p class="search-results-more">${totalMatches - SEARCH_RESULT_LIMIT} autres — affinez la recherche</p>`
+        : '';
+
+    container.innerHTML =
+      visible
+        .map((p) => {
+          const sel = state.selectedPokemonId === p.id;
+          return `
         <div class="search-result-item ${sel ? 'selected' : ''}" data-id="${escapeAttr(p.id)}" role="button" tabindex="0">
-          ${SpriteImg.tagForPokemon(p, { loading: 'lazy', decoding: 'async', pokemonId: p.id, id: p.id })}
+          ${renderDenseSpriteTag(p)}
           <div class="search-result-item__info">
             <div class="search-result-item__name">${escapeHtml(p.name)}</div>
             <div class="search-result-item__meta">${escapeHtml(p.pokedexId)} · BST ${PokemonSpecies.getBaseTotal(p)}</div>
           </div>
         </div>`;
-      })
-      .join('');
-
-    container.querySelectorAll('.search-result-item').forEach((el) => {
-      el.addEventListener('click', () => {
-        state = { ...state, selectedPokemonId: el.dataset.id };
-        renderSearch();
-        renderAll();
-      });
-    });
+        })
+        .join('') + moreHtml;
 
     updateDockActions();
   }
@@ -715,7 +883,7 @@
       if (statAvailable) statAvailable.textContent = '—';
       return;
     }
-    const counts = PokemonSpecies.countPoolStats(poolData.pokemon, state);
+    const counts = getPoolStatsCached();
     if (statAvailable) statAvailable.textContent = String(counts.disponibles);
     if (statPicks) statPicks.textContent = String(state.totalPicksDone);
   }
@@ -758,7 +926,7 @@
       return;
     }
 
-    const stats = PokemonSpecies.countActivePoolStats(poolData.pokemon);
+    const stats = getActivePoolStatsCached();
     totalEl.textContent = String(stats.total);
     activeEl.textContent = String(stats.actifs);
     megaEl.textContent = String(stats.megaCount);
@@ -1066,6 +1234,10 @@
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
+    lastDashboardTeamsKey = '';
+    lastDashboardBansKey = '';
+    lastSearchListKey = '';
+    StreamView?.invalidateRenderCache?.();
     renderAll();
   }
 
@@ -1135,7 +1307,8 @@
   }
 
   function renderAll() {
-    if (editingPlayerName === null) {
+    const stream = isStreamMode();
+    if (editingPlayerName === null && !stream) {
       renderPlayersGrid();
       renderDashboardBans();
     }
@@ -1146,7 +1319,7 @@
     if (isPokedexTabActive()) {
       renderPokedex();
     }
-    if (StreamView) StreamView.render(state, poolData);
+    if (stream && StreamView) StreamView.render(state, poolData);
     renderDashboardRecap();
     placeViewModeSwitch();
     syncActivePoolSettingsFields();
@@ -1158,7 +1331,6 @@
     if (!pokemon) return;
     const nextId = state.selectedPokemonId === id ? null : id;
     state = { ...state, selectedPokemonId: nextId };
-    renderSearch();
     renderAll();
   }
 
@@ -1315,22 +1487,26 @@
       return;
     }
 
-    container.innerHTML = list
-      .map(
-        (p) => `
+    const totalMatches = list.length;
+    const visible = list.slice(0, SEARCH_RESULT_LIMIT);
+    const moreHtml =
+      totalMatches > SEARCH_RESULT_LIMIT
+        ? `<p class="slot-picker-empty">${totalMatches - SEARCH_RESULT_LIMIT} autres — affinez la recherche</p>`
+        : '';
+
+    container.innerHTML =
+      visible
+        .map(
+          (p) => `
         <div class="search-result-item slot-picker-item" data-id="${escapeAttr(p.id)}" role="button" tabindex="0">
-          ${SpriteImg.tagForPokemon(p)}
+          ${renderDenseSpriteTag(p)}
           <div class="search-result-item__info">
             <div class="search-result-item__name">${escapeHtml(p.name)}</div>
             <div class="search-result-item__meta">${escapeHtml(p.pokedexId)} · BST ${PokemonSpecies.getBaseTotal(p)}</div>
           </div>
         </div>`
-      )
-      .join('');
-
-    container.querySelectorAll('.slot-picker-item').forEach((el) => {
-      el.addEventListener('click', () => selectSlotPokemon(el.dataset.id));
-    });
+        )
+        .join('') + moreHtml;
   }
 
   function closeSlotPicker() {
@@ -1804,13 +1980,6 @@
 
     initPlayerDragDrop();
 
-    $('#slot-picker-search')?.addEventListener('input', renderSlotPickerResults);
-    $('#slot-picker-clear')?.addEventListener('click', clearSlotPokemon);
-    $('#slot-picker-cancel')?.addEventListener('click', closeSlotPicker);
-    $('#slot-picker-overlay')?.addEventListener('click', (e) => {
-      if (e.target.id === 'slot-picker-overlay') closeSlotPicker();
-    });
-
     $('#btn-start-draft-stream')?.addEventListener('click', startDraft);
     $('#btn-ban')?.addEventListener('click', banSelection);
     $('#btn-pick')?.addEventListener('click', assignSelection);
@@ -1847,7 +2016,47 @@
     });
     $('#btn-reset-active-profile')?.addEventListener('click', resetActiveProfileToBaseline);
 
-    $('#pokemon-search').addEventListener('input', renderSearch);
+    const searchResults = $('#search-results');
+    if (searchResults && !searchResultsDelegated) {
+      searchResultsDelegated = true;
+      searchResults.addEventListener('click', (e) => {
+        const el = e.target.closest('.search-result-item');
+        if (!el?.dataset.id || el.classList.contains('slot-picker-item')) return;
+        state = { ...state, selectedPokemonId: el.dataset.id };
+        renderAll();
+      });
+    }
+
+    const slotPickerResults = $('#slot-picker-results');
+    if (slotPickerResults && !slotPickerDelegated) {
+      slotPickerDelegated = true;
+      slotPickerResults.addEventListener('click', (e) => {
+        const el = e.target.closest('.slot-picker-item');
+        if (!el?.dataset.id) return;
+        selectSlotPokemon(el.dataset.id);
+      });
+    }
+
+    $('#slot-picker-search')?.addEventListener('input', () => {
+      if (slotPickerDebounce) clearTimeout(slotPickerDebounce);
+      slotPickerDebounce = setTimeout(() => {
+        slotPickerDebounce = 0;
+        renderSlotPickerResults();
+      }, SEARCH_DEBOUNCE_MS);
+    });
+    $('#slot-picker-clear')?.addEventListener('click', clearSlotPokemon);
+    $('#slot-picker-cancel')?.addEventListener('click', closeSlotPicker);
+    $('#slot-picker-overlay')?.addEventListener('click', (e) => {
+      if (e.target.id === 'slot-picker-overlay') closeSlotPicker();
+    });
+
+    $('#pokemon-search').addEventListener('input', () => {
+      if (searchInputDebounce) clearTimeout(searchInputDebounce);
+      searchInputDebounce = setTimeout(() => {
+        searchInputDebounce = 0;
+        renderSearch();
+      }, SEARCH_DEBOUNCE_MS);
+    });
 
     const streamLayout = $('#stream-layout');
     streamLayout?.addEventListener('click', (e) => {
@@ -1955,13 +2164,17 @@
       return;
     }
 
+    if (loadEmbeddedPokedex()) {
+      onPokedexReady();
+      return;
+    }
+
     loadPoolFromUrl(POKEDEX_URL).then((loaded) => {
       if (loaded) {
         onPokedexReady();
         return;
       }
-      if (loadEmbeddedPokedex()) onPokedexReady();
-      else onPokedexFailed();
+      onPokedexFailed();
     });
   }
 

@@ -965,6 +965,20 @@
     refreshTimerPauseButton();
   }
 
+  function invalidateRenderCache() {
+    lastRenderSnapshot = {
+      teamsKey: '',
+      playerNamesKey: '',
+      active: -2,
+      spotlightId: null,
+      selectedId: null,
+      bansKey: '',
+      recapKey: '',
+      totalPicksDone: lastRenderSnapshot.totalPicksDone || 0,
+      totalBansDone: lastRenderSnapshot.totalBansDone || 0,
+    };
+  }
+
   initTimerPauseButton();
 
   global.StreamView = {
@@ -984,6 +998,8 @@
     toggleTimerPause,
 
     isTimerPaused: () => timerPaused,
+
+    invalidateRenderCache,
 
   };
 

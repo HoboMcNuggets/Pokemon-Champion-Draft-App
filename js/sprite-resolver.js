@@ -157,21 +157,27 @@
    * Entrée Pokeos : animé → Showdown → render → placeholder.
    * @returns {{ url: string, fallbacks: string[] }}
    */
-  function resolvePokeosEntry(pokemon, entry) {
+  function resolvePokeosEntry(pokemon, entry, preferStatic) {
     const chain = [];
 
-    if (entry.s === 'animated' && entry.u) {
+    if (!preferStatic && entry.s === 'animated' && entry.u) {
+      chain.push(entry.u);
+    }
+
+    const renderUrl = primaryPokeosRenderUrl(pokemon, entry);
+    if (renderUrl) chain.push(renderUrl);
+
+    if (entry.s === 'static' && entry.u) {
       chain.push(entry.u);
     }
 
     const showdown = showdownUrl(pokemon);
     if (showdown !== PLACEHOLDER) {
-      chain.push(showdown);
+      chain.push(preferStatic ? showdownAniToGen5(showdown) : showdown);
     }
 
-    const renderUrl = primaryPokeosRenderUrl(pokemon, entry);
-    if (renderUrl) {
-      chain.push(renderUrl);
+    if (preferStatic && entry.s === 'animated' && entry.u) {
+      chain.push(entry.u);
     }
 
     chain.push(PLACEHOLDER);
@@ -187,21 +193,28 @@
     };
   }
 
-  function resolveFromIndex(pokemon) {
+  /** GIF Showdown ani → PNG gen5 pour listes denses. */
+  function showdownAniToGen5(url) {
+    const s = String(url || '');
+    if (!/pokemonshowdown\.com\/sprites\/ani\//i.test(s) || !/\.gif(\?|$)/i.test(s)) {
+      return s;
+    }
+    return s
+      .replace(/\/sprites\/ani\//i, '/sprites/gen5/')
+      .replace(/\.gif(\?|$)/i, '.png$1');
+  }
+
+  function resolveFromIndex(pokemon, preferStatic) {
     if (!indexById || !pokemon?.id) return null;
     const entry = indexById[pokemon.id];
     if (!entry) return null;
 
     if (entry.s === 'showdown') {
-      const url = showdownUrl(pokemon);
-      return {
-        url,
-        fallbacks: url !== PLACEHOLDER ? [PLACEHOLDER] : [],
-      };
+      return resolveShowdownOnly(pokemon, preferStatic);
     }
 
-    if (entry.u || entry.s === 'render') {
-      return resolvePokeosEntry(pokemon, entry);
+    if (entry.u || entry.s === 'render' || entry.s === 'static' || entry.s === 'animated') {
+      return resolvePokeosEntry(pokemon, entry, preferStatic);
     }
 
     return null;
@@ -210,31 +223,44 @@
   /**
    * @returns {{ url: string, fallbacks: string[] }}
    */
-  function resolveShowdownOnly(pokemon) {
-    const url = showdownUrl(pokemon);
+  function resolveShowdownOnly(pokemon, preferStatic) {
+    let url = showdownUrl(pokemon);
+    if (preferStatic) url = showdownAniToGen5(url);
     const fallbacks = url !== PLACEHOLDER ? [PLACEHOLDER] : [];
     return { url, fallbacks };
   }
 
-  function resolve(pokemon, mode) {
+  function parseResolveOptions(modeOrOptions) {
+    if (modeOrOptions && typeof modeOrOptions === 'object') {
+      return {
+        mode: modeOrOptions.mode,
+        preferStatic: !!modeOrOptions.preferStatic,
+      };
+    }
+    return { mode: modeOrOptions, preferStatic: false };
+  }
+
+  function resolve(pokemon, modeOrOptions) {
     if (!pokemon) {
       return { url: PLACEHOLDER, fallbacks: [] };
     }
 
-    const m = normalizeMode(mode ?? getMode());
+    const opts = parseResolveOptions(modeOrOptions);
+    const m = normalizeMode(opts.mode ?? getMode());
+    const preferStatic = opts.preferStatic;
 
     if (m === 'retro') {
-      return resolveShowdownOnly(pokemon);
+      return resolveShowdownOnly(pokemon, preferStatic);
     }
 
     if (!indexById) {
-      return resolveShowdownOnly(pokemon);
+      return resolveShowdownOnly(pokemon, preferStatic);
     }
 
-    const indexed = resolveFromIndex(pokemon);
+    const indexed = resolveFromIndex(pokemon, preferStatic);
     if (indexed) return indexed;
 
-    return resolveShowdownOnly(pokemon);
+    return resolveShowdownOnly(pokemon, preferStatic);
   }
 
   function applyIndexData(data) {

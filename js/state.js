@@ -242,7 +242,45 @@
 
 
 
+  let pokemonByIdCache = null;
+
+  let pokemonByIdPoolRef = null;
+
+
+
+  function getPokemonByIdMap(pool) {
+
+    if (!pool?.pokemon) return null;
+
+    if (pool === pokemonByIdPoolRef && pokemonByIdCache) return pokemonByIdCache;
+
+    pokemonByIdPoolRef = pool;
+
+    pokemonByIdCache = new Map(pool.pokemon.map((p) => [p.id, p]));
+
+    return pokemonByIdCache;
+
+  }
+
+
+
+  function invalidatePokemonIndex() {
+
+    pokemonByIdCache = null;
+
+    pokemonByIdPoolRef = null;
+
+  }
+
+
+
   function findPokemon(pool, id) {
+
+    if (!pool?.pokemon || id == null || id === '') return null;
+
+    const map = getPokemonByIdMap(pool);
+
+    if (map) return map.get(id) || null;
 
     return pool.pokemon.find((p) => p.id === id) || null;
 
@@ -1942,6 +1980,8 @@
     startDraft,
 
     findPokemon,
+
+    invalidatePokemonIndex,
 
     getPlayerBans,
 
