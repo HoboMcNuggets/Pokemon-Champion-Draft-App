@@ -525,10 +525,17 @@
 .pokedex-table th.sortable {
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
 }
 
 .pokedex-table th.sortable:hover {
   background: color-mix(in srgb, var(--accent) 92%, #fff);
+}
+
+.pokedex-table__sort-ind {
+  margin-left: 0.35em;
+  font-weight: 700;
+  opacity: 0.95;
 }
 
 .pokedex-empty {

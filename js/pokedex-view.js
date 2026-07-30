@@ -110,6 +110,9 @@
         va = a.pokedexId;
         vb = b.pokedexId;
         return va < vb ? -sortDir : va > vb ? sortDir : 0;
+      } else if (sortKey === 'enabled' || sortKey === 'isMega') {
+        va = Number(!!a[sortKey]);
+        vb = Number(!!b[sortKey]);
       } else {
         va = a[sortKey] ?? 0;
         vb = b[sortKey] ?? 0;
@@ -171,7 +174,20 @@
     return `<td class="pokedex-table__status pokedex-table__status--readonly" title="Modifiable uniquement avant le démarrage du draft">${statutCol}</td>`;
   }
 
-  function renderTable(container, list, canEditActive) {
+  function renderSortableTh(label, key, sortKey, sortDir) {
+    const active = sortKey === key;
+    const dirClass = active ? (sortDir === 'desc' ? ' is-sorted-desc' : ' is-sorted-asc') : '';
+    const ariaSort = active ? (sortDir === 'desc' ? 'descending' : 'ascending') : 'none';
+    const indicator = active
+      ? `<span class="pokedex-table__sort-ind" aria-hidden="true">${sortDir === 'desc' ? '↑' : '↓'}</span>`
+      : '';
+    return `<th class="sortable${dirClass}" data-sort="${escapeHtml(key)}" aria-sort="${ariaSort}">${label}${indicator}</th>`;
+  }
+
+  function renderTable(container, list, canEditActive, sortKey, sortDir) {
+    const key = sortKey || 'name';
+    const dir = sortDir === 'desc' ? 'desc' : 'asc';
+    const th = (label, sortField) => renderSortableTh(label, sortField, key, dir);
     const rows = list
       .map((p) => {
         const rowClass = !p.enabled ? 'row-inactif' : '';
@@ -201,21 +217,21 @@
       <table class="pokedex-table">
         <thead>
           <tr>
-            <th class="sortable" data-sort="pokedexId"># Pokédex</th>
+            ${th('# Pokédex', 'pokedexId')}
             <th>Sprite</th>
-            <th class="sortable" data-sort="name">Pokémon</th>
+            ${th('Pokémon', 'name')}
             <th>Type 1</th>
             <th>Type 2</th>
             <th>Habileté</th>
-            <th class="sortable" data-sort="baseTotal">BST</th>
-            <th class="sortable" data-sort="hp">PV</th>
-            <th class="sortable" data-sort="attack">Attaque</th>
-            <th class="sortable" data-sort="defense">Défense</th>
-            <th class="sortable" data-sort="spAtk">Atq. Spé.</th>
-            <th class="sortable" data-sort="spDef">Déf. Spé.</th>
-            <th class="sortable" data-sort="speed">Vitesse</th>
-            <th>Statut</th>
-            <th>Mega</th>
+            ${th('BST', 'baseTotal')}
+            ${th('PV', 'hp')}
+            ${th('Attaque', 'attack')}
+            ${th('Défense', 'defense')}
+            ${th('Atq. Spé.', 'spAtk')}
+            ${th('Déf. Spé.', 'spDef')}
+            ${th('Vitesse', 'speed')}
+            ${th('Statut', 'enabled')}
+            ${th('Mega', 'isMega')}
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -467,7 +483,13 @@
       <div class="pokedex-toolbar pokedex-toolbar--bottom"></div>`;
 
     renderPagination(contentEl.querySelector('.pokedex-toolbar:not(.pokedex-toolbar--bottom)'), meta);
-    renderTable(contentEl.querySelector('.pokedex-table-wrap'), pageList, canEditActive);
+    renderTable(
+      contentEl.querySelector('.pokedex-table-wrap'),
+      pageList,
+      canEditActive,
+      filters.sortKey,
+      filters.sortDir
+    );
     renderPagination(contentEl.querySelector('.pokedex-toolbar--bottom'), meta, { position: 'bottom' });
   }
 
