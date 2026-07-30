@@ -631,13 +631,17 @@
     const grid = $('#players-grid');
     if (!grid) return;
     if (isStreamMode()) return;
+    // Ne pas toucher le DOM pendant la saisie du nom.
+    if (editingPlayerName !== null) return;
 
     const active = DraftState.getActivePlayerIndex(state);
     const teamsKey = JSON.stringify(state.teams);
     const namesKey = state.players.map((p) => p.name).join('\0');
     const hasCards = !!grid.querySelector('.player-card');
+    // Après blur/Enter, l'input peut rester si le chemin incrémental ne le remplace pas.
+    const hasOrphanNameInput = !!grid.querySelector('.player-card__name-input');
 
-    if (!hasCards || editingPlayerName !== null) {
+    if (!hasCards || hasOrphanNameInput) {
       rebuildPlayersGrid();
       return;
     }
@@ -1665,8 +1669,24 @@
     searchInput?.focus();
   }
 
-  function startNameEdit(playerIndex, buttonEl) {
-    if (isStreamMode() || editingPlayerName !== null) return;
+  function startNameEdit(playerIndex) {
+    if (isStreamMode()) return;
+    if (editingPlayerName === playerIndex) return;
+
+    if (editingPlayerName !== null) {
+      const openInput = $('#players-grid')?.querySelector('.player-card__name-input');
+      const prevIndex = editingPlayerName;
+      editingPlayerName = null;
+      if (openInput) {
+        updatePlayerName(prevIndex, openInput.value);
+      }
+      rebuildPlayersGrid();
+    }
+
+    const buttonEl = $('#players-grid')?.querySelector(
+      `.player-card__name[data-player="${playerIndex}"]`
+    );
+    if (!buttonEl) return;
 
     const currentName = state.players[playerIndex]?.name || '';
     const input = document.createElement('input');
@@ -1682,17 +1702,17 @@
     input.select();
 
     let cancelled = false;
+    let finished = false;
 
     const finish = (save) => {
-      if (editingPlayerName !== playerIndex) return;
+      if (finished || editingPlayerName !== playerIndex) return;
+      finished = true;
       editingPlayerName = null;
       if (save && !cancelled) {
-        if (updatePlayerName(playerIndex, input.value)) {
-          renderAll();
-          return;
-        }
+        updatePlayerName(playerIndex, input.value);
       }
-      renderPlayersGrid();
+      // renderAll → renderPlayersGrid détecte l'input orphelin et reconstruit la grille.
+      renderAll();
     };
 
     input.addEventListener('keydown', (e) => {
@@ -1702,8 +1722,7 @@
       } else if (e.key === 'Escape') {
         e.preventDefault();
         cancelled = true;
-        editingPlayerName = null;
-        renderPlayersGrid();
+        finish(false);
       }
     });
 
@@ -1999,7 +2018,7 @@
 
       const nameBtn = e.target.closest('.player-card__name');
       if (nameBtn) {
-        startNameEdit(Number(nameBtn.dataset.player), nameBtn);
+        startNameEdit(Number(nameBtn.dataset.player));
         return;
       }
 
