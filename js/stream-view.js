@@ -417,12 +417,6 @@
     const bans = state.bans || [];
     const players = state.players || [];
     const selectedPokemonId = state.selectedPokemonId || null;
-
-    if (bans.length === 0) {
-      list.innerHTML = '<span class="stream-banned__empty">—</span>';
-      return;
-    }
-
     const { round1, round2 } = buildBanMatrix(bans);
     const playerCount = global.DraftState.PLAYER_COUNT;
     const headers = Array.from({ length: playerCount }, (_, index) => {

@@ -881,11 +881,6 @@
   min-height: 8rem;
 }
 
-.stream-banned__empty {
-  color: rgba(255, 255, 255, 0.25);
-  font-size: 0.9rem;
-}
-
 .stream-banned__headers,
 .stream-banned__row {
   display: grid;
@@ -922,6 +917,8 @@
   flex-direction: column;
   align-items: center;
   min-width: 0;
+  /* item 52px + gap + label Mega (même hauteur à vide et à 16 bans) */
+  min-height: calc(52px + 2px + 0.58rem + 1px);
   gap: 2px;
 }
 
