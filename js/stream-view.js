@@ -822,18 +822,23 @@
     DraftStorage?.saveTurnTimerDuration?.(clamped);
   }
 
-  function renderRecapMode(state, poolData) {
+  function renderRecapMode(state, poolData, options = {}) {
     const PHASE = global.DraftState.PHASE;
     const isComplete = state.phase === PHASE.COMPLETE;
+    const showRecap = isComplete && !!options.recapRevealed;
+    const showSummary = isComplete && !showRecap;
     const middle = document.querySelector('.stream-center__middle');
     const streamCenter = document.querySelector('.stream-center');
     const recapEl = document.getElementById('stream-recap');
+    const summaryEl = document.getElementById('stream-complete-summary');
+    const durationEl = document.getElementById('stream-complete-duration');
 
     if (middle) {
       middle.classList.toggle('hidden', isComplete);
     }
     if (streamCenter) {
-      streamCenter.classList.toggle('stream-center--recap', isComplete);
+      streamCenter.classList.toggle('stream-center--recap', showRecap);
+      streamCenter.classList.toggle('stream-center--complete-summary', showSummary);
     }
 
     const draftUiIds = ['stream-spotlight-frame'];
@@ -845,12 +850,24 @@
       middle?.querySelector(sel)?.classList.toggle('hidden', isComplete);
     }
 
+    if (summaryEl) {
+      summaryEl.classList.toggle('hidden', !showSummary);
+      if (showSummary && durationEl) {
+        const durationMs = global.DraftRecap?.computeDurationMs?.(state);
+        const durationLabel = global.DraftRecap?.formatDuration?.(durationMs);
+        durationEl.innerHTML =
+          durationLabel && durationLabel !== '—'
+            ? `Durée totale : <strong>${durationLabel}</strong>`
+            : 'Durée totale : —';
+      }
+    }
+
     if (!recapEl) return;
 
-    recapEl.classList.toggle('hidden', !isComplete);
-    document.getElementById('btn-export-recap-stream')?.classList.toggle('hidden', !isComplete);
+    recapEl.classList.toggle('hidden', !showRecap);
+    document.getElementById('btn-export-recap-stream')?.classList.toggle('hidden', !showRecap);
 
-    if (!isComplete) {
+    if (!showRecap) {
       lastRenderSnapshot.recapKey = '';
       return;
     }
@@ -865,7 +882,7 @@
     }
   }
 
-  function render(state, poolData) {
+  function render(state, poolData, options = {}) {
     const Anim = global.StreamAnimations;
 
     if (Anim && streamRenderCount === 0) {
@@ -939,7 +956,7 @@
 
     renderTopBar(state);
     renderTurnTimer(state);
-    renderRecapMode(state, poolData);
+    renderRecapMode(state, poolData, options);
 
     lastRenderSnapshot.totalPicksDone = state.totalPicksDone ?? 0;
     lastRenderSnapshot.totalBansDone = state.totalBansDone ?? 0;

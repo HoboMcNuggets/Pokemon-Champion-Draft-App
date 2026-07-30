@@ -37,9 +37,14 @@ body {
   justify-content: flex-start;
   flex-wrap: wrap;
   gap: 1rem 1.5rem;
-  padding: 1rem 1.5rem;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
+  padding: 0.85rem 1.5rem;
+  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  position: sticky;
+  top: 0;
+  z-index: 40;
 }
 
 /* Panneau Configuration */
@@ -120,39 +125,62 @@ body {
   overflow-x: visible;
 }
 
+.app-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
 .app-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  flex-shrink: 0;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+
+.app-season {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
 }
 
 .tab-nav {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.35rem;
   flex-shrink: 0;
 }
 
 .tab-btn {
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border: 2px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  color: var(--text);
+  padding: 0.55rem 1.15rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .tab-btn:hover {
-  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .tab-btn.active {
   background: var(--accent);
-  border-color: var(--accent);
   color: #fff;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .tab-panel {
@@ -992,8 +1020,24 @@ input[type="file"] {
   font-size: 1.75rem;
 }
 
+.complete-panel__duration {
+  margin: 0.75rem 0 1.25rem;
+  font-size: 1.15rem;
+  color: var(--text);
+}
+
+.complete-panel__duration strong {
+  color: var(--success);
+  font-variant-numeric: tabular-nums;
+}
+
 .complete-panel .btn + .btn {
   margin-top: 0.75rem;
+}
+
+.complete-panel #btn-show-recap {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .modal-overlay {

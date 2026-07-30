@@ -8,7 +8,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Draft Pokémon — Stream</title>
+  <title>Pokemon Champions Draft League</title>
 
   <link rel="stylesheet" href="css/styles.css">
 
@@ -40,7 +40,10 @@
 
   <header class="app-header">
 
-    <h1 class="app-title">Draft Pokémon</h1>
+    <div class="app-brand">
+      <h1 class="app-title">Pokemon Champions Draft League</h1>
+      <p class="app-season">Saison 1</p>
+    </div>
 
     <nav class="tab-nav" role="tablist">
 
@@ -130,9 +133,13 @@
 
       <p>Tous les picks ont été enregistrés.</p>
 
+      <p id="complete-duration" class="complete-panel__duration" hidden></p>
+
+      <button type="button" class="btn btn-primary" id="btn-show-recap">Voir le récap</button>
+
       <div id="dashboard-recap" class="draft-recap-dashboard hidden" aria-label="Récapitulatif du draft"></div>
 
-      <button type="button" class="btn btn-secondary" id="btn-export-recap-image">Exporter le récap en image</button>
+      <button type="button" class="btn btn-secondary hidden" id="btn-export-recap-image">Exporter le récap en image</button>
 
       <button type="button" class="btn btn-primary" id="btn-new-game">Nouveau draft</button>
 
@@ -177,6 +184,12 @@
             <div class="stream-stats-wrap">
               <div id="stream-spotlight-details" class="stream-spotlight-details stream-spotlight--empty"></div>
             </div>
+          </div>
+          <div id="stream-complete-summary" class="stream-complete-summary hidden" aria-label="Draft terminé">
+            <h2 class="stream-complete-summary__title">Draft terminé</h2>
+            <p id="stream-complete-duration" class="stream-complete-summary__duration"></p>
+            <p class="stream-complete-summary__hint">Tous les picks ont été enregistrés.</p>
+            <button type="button" class="stream-action-btn stream-action-btn--show-recap" id="btn-show-recap-stream">Voir le récap</button>
           </div>
           <div id="stream-recap" class="stream-recap hidden" aria-label="Récapitulatif du draft"></div>
           <div class="stream-actions-row">

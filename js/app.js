@@ -47,6 +47,8 @@
   let viewModeSwitchEl = null;
   let lastDashboardRecapKey = '';
   let recapExportInProgress = false;
+  /** Affichage du récap après fin de draft — session UI, non persisté. */
+  let recapRevealed = false;
   let lastSearchListKey = '';
   let undoRenderRaf = 0;
   let searchInputDebounce = 0;
@@ -134,6 +136,41 @@
     if (type === 'success' || type === 'info') {
       setTimeout(() => bar.classList.add('hidden'), 4000);
     }
+  }
+
+  function syncRecapRevealedWithPhase() {
+    if (state.phase !== PHASE.COMPLETE) {
+      recapRevealed = false;
+    }
+  }
+
+  function revealRecap() {
+    if (state.phase !== PHASE.COMPLETE) return;
+    recapRevealed = true;
+    renderAll();
+  }
+
+  function getCompleteDurationLabel() {
+    if (!window.DraftRecap?.computeDurationMs || !window.DraftRecap?.formatDuration) {
+      return null;
+    }
+    const ms = window.DraftRecap.computeDurationMs(state);
+    const label = window.DraftRecap.formatDuration(ms);
+    return label && label !== '—' ? label : null;
+  }
+
+  function updateCompleteDurationDisplay() {
+    const durationEl = $('#complete-duration');
+    if (!durationEl) return;
+    const complete = state.phase === PHASE.COMPLETE;
+    const label = complete ? getCompleteDurationLabel() : null;
+    if (!label) {
+      durationEl.hidden = true;
+      durationEl.textContent = '';
+      return;
+    }
+    durationEl.hidden = false;
+    durationEl.innerHTML = `Durée totale : <strong>${label}</strong>`;
   }
 
   function persist() {
@@ -1053,9 +1090,11 @@
   }
 
   function updateControls() {
+    syncRecapRevealedWithPhase();
     const setup = state.phase === PHASE.SETUP;
     const complete = state.phase === PHASE.COMPLETE;
     const playing = isPlayingPhase();
+    const showRecap = complete && recapRevealed;
 
     const btnStartStream = $('#btn-start-draft-stream');
     if (btnStartStream) {
@@ -1065,6 +1104,17 @@
     }
     $('#draft-main--classic')?.classList.toggle('hidden', isStreamMode());
     $('#complete-panel').classList.toggle('hidden', !complete || isStreamMode());
+    updateCompleteDurationDisplay();
+
+    const btnShowRecap = $('#btn-show-recap');
+    if (btnShowRecap) {
+      btnShowRecap.classList.toggle('hidden', !complete || isStreamMode() || showRecap);
+    }
+    const btnExportRecap = $('#btn-export-recap-image');
+    if (btnExportRecap) {
+      btnExportRecap.classList.toggle('hidden', !showRecap || isStreamMode());
+    }
+
     renderDashboardRecap();
 
     if (searchInputEnabled(playing)) {
@@ -1096,6 +1146,7 @@
     }
     if (StreamAnimations) StreamAnimations.suppressNextRender();
     state = result.state;
+    recapRevealed = false;
     persist();
     renderAll();
     showMessage('Draft simulé — 16 bans et 64 picks enregistrés.', 'success');
@@ -1292,7 +1343,7 @@
     const el = $('#dashboard-recap');
     if (!el || !window.DraftRecap) return;
     const complete = state.phase === PHASE.COMPLETE;
-    const show = complete && !isStreamMode();
+    const show = complete && recapRevealed && !isStreamMode();
     el.classList.toggle('hidden', !show);
     if (!show) {
       lastDashboardRecapKey = '';
@@ -1307,6 +1358,7 @@
   }
 
   function renderAll() {
+    syncRecapRevealedWithPhase();
     const stream = isStreamMode();
     if (editingPlayerName === null && !stream) {
       renderPlayersGrid();
@@ -1319,7 +1371,7 @@
     if (isPokedexTabActive()) {
       renderPokedex();
     }
-    if (stream && StreamView) StreamView.render(state, poolData);
+    if (stream && StreamView) StreamView.render(state, poolData, { recapRevealed });
     renderDashboardRecap();
     placeViewModeSwitch();
     syncActivePoolSettingsFields();
@@ -1427,6 +1479,7 @@
       StreamAnimations.suppressNextRender();
     }
     state = DraftState.undo(state);
+    syncRecapRevealedWithPhase();
     persist();
     if (undoRenderRaf) cancelAnimationFrame(undoRenderRaf);
     undoRenderRaf = requestAnimationFrame(flushUndoRender);
@@ -1685,6 +1738,7 @@
         const players = state.players;
         state = DraftState.resetDraft(true);
         state = DraftState.setPlayerNames(state, players);
+        recapRevealed = false;
         persist();
         renderAll();
       }
@@ -1697,6 +1751,7 @@
       'Le draft en cours sera supprimé (joueurs remis par défaut, bans et picks effacés). Continuer ?',
       () => {
         state = DraftState.resetDraft(false);
+        recapRevealed = false;
         persist();
         renderAll();
       }
@@ -1705,8 +1760,8 @@
 
   function exportRecapImage() {
     if (recapExportInProgress) return;
-    if (state.phase !== PHASE.COMPLETE) {
-      showMessage('Le récapitulatif est disponible uniquement en fin de draft.', 'error');
+    if (state.phase !== PHASE.COMPLETE || !recapRevealed) {
+      showMessage('Ouvrez d’abord le récapitulatif en fin de draft.', 'error');
       return;
     }
     if (!window.DraftRecap?.exportRecapImage) {
@@ -1761,6 +1816,7 @@
     state = DraftState.importDraftState(rawState, poolData);
     editingPlayerName = null;
     slotPickerContext = null;
+    recapRevealed = false;
     closeSlotPicker();
     persist();
     renderAll();
@@ -1987,6 +2043,8 @@
     $('#btn-reset-draft').addEventListener('click', resetDraft);
     $('#btn-mock-draft')?.addEventListener('click', runMockDraft);
     $('#btn-new-game').addEventListener('click', newGame);
+    $('#btn-show-recap')?.addEventListener('click', revealRecap);
+    $('#btn-show-recap-stream')?.addEventListener('click', revealRecap);
     $('#btn-export-recap-image')?.addEventListener('click', exportRecapImage);
     $('#btn-export-recap-stream')?.addEventListener('click', exportRecapImage);
     $('#btn-export').addEventListener('click', exportDraft);

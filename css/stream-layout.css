@@ -1088,6 +1088,7 @@
   display: none;
 }
 
+.stream-mode .app-brand,
 .stream-mode .app-title,
 .stream-mode .tab-nav {
   display: none !important;
